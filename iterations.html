@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganttsy — Chat Window · tree (collapsed ↔ expanded)</title>
+<style>
+  :root {
+    --bg:#151517; --bg-2:#101012; --surface:#1E1E20; --surface-hi:#262629;
+    --border:#2C2C30; --border-hi:#3a3a40;
+    --text:#ECECEE; --text-2:#C7C7CD; --text-muted:#8C8C94; --text-dim:#5d5d65;
+    --orange:#FF9B1A; --orange-text:#FFB658; --orange-tint:rgba(255,155,26,.12); --orange-bd:rgba(255,155,26,.40);
+    --green:#2BD27E; --green-text:#52DDA1; --green-tint:rgba(43,210,126,.11); --green-bd:rgba(43,210,126,.55);
+    --yellow:#E8B53C; --yellow-text:#F0C45C; --yellow-tint:rgba(232,181,60,.11); --yellow-bd:rgba(232,181,60,.6);
+    --gray-mark:#3c3c42; --red:#E97070;
+  }
+  *,*::before,*::after { box-sizing:border-box; }
+  html,body { margin:0; padding:0; background:#0b0b0d; color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:13px; line-height:1.45; -webkit-font-smoothing:antialiased; }
+  .page { max-width:1180px; margin:0 auto; padding:56px 40px 100px; }
+  .page-title { font-size:32px; font-weight:700; margin:0 0 6px; }
+  .page-sub { font-size:15px; color:var(--text-muted); margin:0 0 14px; max-width:760px; }
+  .hintbar { font-size:13px; color:var(--text-2); background:var(--orange-tint); border:1px solid var(--orange-bd); border-radius:10px; padding:11px 15px; max-width:760px; margin:0 0 44px; }
+  .hintbar b { color:var(--orange-text); }
+  .showcase { display:flex; gap:64px; align-items:flex-start; flex-wrap:wrap; }
+  .opt-col { width:392px; }
+  .opt-cap { margin:0 0 16px; }
+  .opt-cap .tag { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em; color:var(--orange-text); background:var(--orange-tint); border:1px solid var(--orange-bd); border-radius:999px; padding:3px 10px; margin-bottom:8px; }
+  .opt-cap h3 { font-size:19px; font-weight:700; margin:0 0 4px; }
+  .opt-cap p { font-size:12.5px; color:var(--text-muted); margin:0; line-height:1.5; }
+
+  .shell { width:392px; height:856px; border-radius:44px; background:var(--bg-2); border:1px solid #232326; box-shadow:0 30px 70px rgba(0,0,0,.6); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .statusbar { height:34px; display:flex; align-items:center; justify-content:space-between; padding:9px 28px 0; font-size:12px; font-weight:700; color:#fff; flex:0 0 auto; }
+  .app-header { display:flex; align-items:center; justify-content:space-between; padding:3px 16px 11px; flex:0 0 auto; }
+  .app-header .back { width:44px; height:44px; border-radius:50%; background:#1d1d20; border:1px solid #2c2c31; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px; cursor:pointer; }
+  .app-header .title { font-size:19px; font-weight:700; color:#fff; }
+  .app-header .avatar-wrap { width:44px; height:44px; position:relative; display:flex; align-items:center; justify-content:center; }
+  .app-header .avatar { width:36px; height:36px; border-radius:50%; background:radial-gradient(circle at 40% 30%, #d8b07a, #8a6638 70%); border:1.5px solid #0f0c0b; }
+  .app-header .avatar-wrap::after { content:''; position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(from 0deg, transparent 0 7deg, rgba(255,255,255,.45) 7deg 8.5deg, transparent 8.5deg 30deg, rgba(255,255,255,.45) 30deg 31.5deg, transparent 31.5deg 60deg, rgba(255,255,255,.45) 60deg 61.5deg, transparent 61.5deg 90deg, rgba(255,255,255,.45) 90deg 91.5deg, transparent 91.5deg 120deg, rgba(255,255,255,.45) 120deg 121.5deg, transparent 121.5deg 150deg, rgba(255,255,255,.45) 150deg 151.5deg, transparent 151.5deg 180deg, rgba(255,255,255,.45) 180deg 181.5deg, transparent 181.5deg 210deg, rgba(255,255,255,.45) 210deg 211.5deg, transparent 211.5deg 240deg, rgba(255,255,255,.45) 240deg 241.5deg, transparent 241.5deg 270deg, rgba(255,255,255,.45) 270deg 271.5deg, transparent 271.5deg 300deg, rgba(255,255,255,.45) 300deg 301.5deg, transparent 301.5deg 330deg, rgba(255,255,255,.45) 330deg 331.5deg, transparent 331.5deg 360deg);
+    -webkit-mask:radial-gradient(circle, transparent 0 18px, #000 18px 22px, transparent 22px); mask:radial-gradient(circle, transparent 0 18px, #000 18px 22px, transparent 22px); }
+  .chat-space { flex:1; margin:0 10px; border-radius:26px; border:1px solid var(--border); background:var(--bg); overflow:hidden; display:flex; flex-direction:column; position:relative; }
+
+  .ring { width:34px; height:34px; border-radius:50%; flex:0 0 34px; position:relative; background:conic-gradient(var(--yellow) calc(var(--p,26)*1%), rgba(255,255,255,.09) 0); }
+  .ring::after { content:''; position:absolute; inset:3.5px; border-radius:50%; background:var(--bg-2); }
+  .ring span { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; color:var(--yellow-text); z-index:1; }
+
+  /* context bar (A) */
+  .ctxbar { flex:0 0 auto; display:flex; align-items:center; gap:11px; padding:12px 15px; border-bottom:1px solid var(--border); background:var(--bg-2); cursor:pointer; user-select:none; }
+  .ctxbar .thumb { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#34343c,#222227); border:1px solid var(--border-hi); flex:0 0 34px; position:relative; }
+  .ctxbar .thumb::after { content:'🏗'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; opacity:.85; }
+  .ctxbar .ct { display:flex; flex-direction:column; min-width:0; flex:1; }
+  .ctxbar .ct .l1 { font-size:13px; font-weight:700; }
+  .ctxbar .ct .l2 { font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ctxbar .ct .l2 .y { color:var(--yellow-text); font-weight:600; }
+  .ctxbar .exp { color:var(--text-muted); font-size:14px; flex:0 0 auto; transition:transform .25s; }
+  .shell.tree-open .ctxbar .exp { transform:rotate(180deg); color:var(--orange-text); }
+
+  .tree-panel { flex:0 0 auto; border-bottom:1px solid var(--border); background:var(--bg-2); max-height:0; overflow:hidden; transition:max-height .32s ease; }
+  .shell.tree-open .tree-panel { max-height:54%; overflow-y:auto; box-shadow:0 16px 28px -6px rgba(0,0,0,.55); }
+  .tree-panel .tree-content { padding:0 15px 16px; }
+
+  /* in-progress */
+  .inprog { flex:0 0 auto; margin:12px 14px 0; padding:10px 12px; background:var(--surface); border:1px solid var(--border); border-left:2px solid var(--yellow); border-radius:10px; display:flex; align-items:center; gap:11px; font-size:12px; }
+  .inprog .pulse { width:12px; height:12px; border-radius:50%; background:var(--yellow); flex:0 0 12px; position:relative; }
+  .inprog .pulse::after { content:''; position:absolute; inset:0; border-radius:50%; background:var(--yellow); animation:pulse 1.6s ease-out infinite; }
+  @keyframes pulse { 0%{transform:scale(1);opacity:.6;} 100%{transform:scale(2.4);opacity:0;} }
+  .inprog .txt { color:var(--text-2); flex:1; } .inprog .txt b { color:var(--text); font-weight:600; } .inprog .txt small { color:var(--text-dim); }
+  .inprog .stop { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; background:var(--surface-hi); border:1px solid var(--border-hi); border-radius:8px; color:var(--text-2); font-size:11px; font-weight:600; cursor:pointer; }
+  .inprog .stop .sq { width:8px; height:8px; background:var(--red); border-radius:1px; }
+
+  /* conversation */
+  .cv { flex:1; overflow-y:auto; padding:14px 14px 8px; display:flex; flex-direction:column; justify-content:flex-end; gap:13px; }
+  .cv::-webkit-scrollbar { width:0; }
+  .msg { display:flex; gap:9px; align-items:flex-start; animation:pop .25s ease; }
+  @keyframes pop { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
+  .msg .g { width:27px; height:27px; border-radius:50%; background:var(--orange-tint); border:1px solid var(--orange-bd); color:var(--orange-text); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; flex:0 0 27px; }
+  .col { display:flex; flex-direction:column; gap:4px; max-width:288px; }
+  .bub { background:var(--surface); border:1px solid var(--border); border-radius:15px; border-top-left-radius:5px; padding:10px 14px; font-size:13px; line-height:1.5; position:relative; }
+  .time { font-size:9.5px; color:var(--text-dim); padding:0 4px; }
+  .msg.me { justify-content:flex-end; } .msg.me .col { align-items:flex-end; }
+  .msg.me .bub { background:var(--orange-tint); border-color:var(--orange-bd); color:#F4DDBC; font-weight:500; border-radius:15px; border-top-right-radius:5px; }
+
+  .optbtns { display:flex; flex-direction:column; gap:8px; margin-top:11px; }
+  .ob { display:flex; align-items:center; gap:11px; border:1px solid var(--border-hi); background:var(--surface-hi); border-radius:10px; padding:10px 12px; font-size:13px; cursor:pointer; transition:.15s; }
+  .ob .k { width:22px; height:22px; border-radius:50%; border:1px solid var(--border-hi); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; color:var(--text-muted); flex:0 0 22px; }
+  .ob .w { color:var(--text-dim); }
+  .ob:hover { border-color:var(--text-muted); transform:translateY(-1px); }
+  .ob.selected { border-color:var(--green); background:var(--green-tint); }
+  .ob.selected .k { border-color:var(--green); color:var(--green-text); }
+  .optbtns.locked .ob:not(.selected) { opacity:.4; pointer-events:none; }
+  .hint { font-size:11px; color:var(--text-dim); margin-top:9px; }
+
+  .ans { margin-top:11px; border:1px solid var(--border); background:var(--bg-2); border-radius:12px; padding:12px 13px; position:relative; }
+  .ans .ah { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+  .ans .ah .star { color:var(--text-dim); font-size:13px; cursor:pointer; } .ans .ah .star.on { color:var(--orange); }
+  .ans .ah .lbl { font-size:9.5px; font-weight:700; letter-spacing:.07em; color:var(--text-dim); }
+  .ans .ah .dots { margin-left:auto; color:var(--text-muted); font-size:18px; font-weight:700; cursor:pointer; line-height:1; padding:0 4px; }
+  .ans .frow { display:flex; gap:10px; padding:5px 0; border-top:1px solid var(--border); }
+  .ans .frow:first-of-type { border-top:0; }
+  .ans .frow .k2 { font-size:10px; color:var(--text-dim); font-weight:600; letter-spacing:.03em; text-transform:uppercase; width:62px; flex:0 0 62px; padding-top:1px; }
+  .ans .frow .v2 { font-size:12.5px; color:var(--text-2); flex:1; } .ans .frow .v2.title { font-size:15px; font-weight:700; color:var(--text); }
+  .ans .detail { max-height:0; overflow:hidden; transition:max-height .3s ease; } .ans.expanded .detail { max-height:360px; }
+  .ans .more { font-size:11px; color:var(--orange-text); margin-top:9px; display:inline-flex; gap:5px; cursor:pointer; }
+
+  .menu { position:absolute; right:-4px; top:32px; width:182px; background:#161618; border:1px solid var(--border-hi); border-radius:11px; box-shadow:0 16px 34px rgba(0,0,0,.6); padding:6px; z-index:8; display:none; }
+  .menu.open { display:block; animation:pop .15s ease; }
+  .mi { display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:7px; font-size:13px; color:var(--text-2); cursor:pointer; }
+  .mi:hover { background:var(--surface); } .mi .ic { width:15px; text-align:center; color:var(--text-muted); }
+  .mi.star { color:var(--orange-text); } .mi.star .ic { color:var(--orange); }
+  .mi.danger { color:var(--red); } .mi.danger .ic { color:var(--red); }
+  .msep { height:1px; background:var(--border); margin:4px 10px; }
+
+  .filed { display:inline-flex; align-items:center; gap:7px; margin-top:10px; font-size:11.5px; color:var(--green-text); font-weight:600; }
+  .filed .gd { width:7px; height:7px; border-radius:50%; background:var(--green); }
+  .feedback { display:inline-flex; align-items:center; gap:7px; margin-top:10px; padding:7px 12px; border-radius:16px; background:var(--green-tint); border:1px solid var(--green-bd); color:var(--green-text); font-size:11.5px; font-weight:600; cursor:pointer; }
+  .answer-msg { display:none; } .answer-msg.show { display:flex; }
+
+  .inputbar { flex:0 0 auto; border-top:1px solid var(--border); background:var(--bg-2); padding:12px 13px; display:flex; align-items:center; gap:10px; }
+  .inputbar .plus { width:34px; height:34px; border-radius:50%; background:var(--surface-hi); border:1px solid var(--border-hi); display:flex; align-items:center; justify-content:center; color:var(--text-2); font-size:17px; flex:0 0 34px; cursor:pointer; }
+  .inputbar .field { flex:1; height:42px; background:var(--surface); border:1px solid var(--border-hi); border-radius:21px; display:flex; align-items:center; padding:0 15px; gap:10px; }
+  .inputbar .field input { flex:1; background:transparent; border:0; outline:none; color:var(--text); font-size:13px; font-family:inherit; }
+  .inputbar .field input::placeholder { color:var(--text-dim); } .inputbar .field .mic { color:var(--text-muted); cursor:pointer; }
+
+  .tabbar { flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:11px 12px 16px; }
+  .navpill { flex:1; height:62px; background:#141416; border:1px solid #242427; border-radius:31px; display:flex; align-items:center; justify-content:space-around; padding:0 6px; }
+  .navtab { display:flex; flex-direction:column; align-items:center; gap:3px; color:#cbcbd0; font-size:10.5px; font-weight:500; padding:5px 7px; cursor:pointer; }
+  .navtab .ic { font-size:17px; line-height:1; }
+  .navtab.active { background:#2a2412; border-radius:19px; padding:8px 14px; color:var(--orange-text); }
+  .navtab.active .logo { display:flex; flex-direction:column; gap:2px; align-items:center; }
+  .navtab.active .logo i { display:block; height:3px; border-radius:2px; background:var(--orange); }
+  .navtab.active .logo i:nth-child(1){width:15px;} .navtab.active .logo i:nth-child(2){width:10px;} .navtab.active .logo i:nth-child(3){width:13px;}
+  .search-fab { width:62px; height:62px; border-radius:50%; background:#141416; border:1px solid #242427; display:flex; align-items:center; justify-content:center; color:#fff; font-size:19px; flex:0 0 62px; cursor:pointer; }
+
+  /* chip (C) */
+  .chip { position:absolute; top:11px; left:13px; z-index:6; display:flex; align-items:center; gap:9px; padding:6px 30px 6px 7px; background:rgba(24,24,27,.96); border:1px solid var(--border-hi); border-radius:22px; box-shadow:0 8px 20px rgba(0,0,0,.5); cursor:pointer; }
+  .chip .cring { width:26px; height:26px; border-radius:50%; position:relative; background:conic-gradient(var(--yellow) calc(var(--p,26)*1%), rgba(255,255,255,.1) 0); flex:0 0 26px; }
+  .chip .cring::after { content:''; position:absolute; inset:3px; border-radius:50%; background:#1a1a1d; }
+  .chip .cring b { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:var(--yellow-text); z-index:1; }
+  .chip .ctx { font-size:11.5px; line-height:1.2; } .chip .ctx .a { font-weight:700; } .chip .ctx .b { color:var(--text-muted); font-size:10px; }
+  .chip .cexp { position:absolute; right:10px; top:11px; color:var(--text-muted); font-size:11px; transition:transform .25s; }
+  .shell.tree-open .chip .cexp { transform:rotate(180deg); color:var(--orange-text); }
+  .chip-overlay { position:absolute; top:52px; left:13px; right:13px; z-index:5; background:#161618; border:1px solid var(--border-hi); border-radius:16px; box-shadow:0 18px 44px rgba(0,0,0,.65); padding:10px 14px 14px; max-height:0; overflow:hidden; opacity:0; transform:translateY(-8px); pointer-events:none; transition:opacity .22s, transform .22s; }
+  .shell.tree-open .chip-overlay { max-height:62%; overflow-y:auto; opacity:1; transform:none; pointer-events:auto; }
+  .chip-overlay .oh { display:flex; align-items:center; font-size:10px; font-weight:700; letter-spacing:.06em; color:var(--text-dim); padding:4px 2px 10px; }
+  .chip-overlay .oh .x { margin-left:auto; color:var(--text-muted); font-size:14px; cursor:pointer; }
+
+  /* ===== TREE (PDF style: collapsed cards ↔ expand for detail) ===== */
+  .tnode { margin-bottom:10px; }
+  .chev { color:var(--text-muted); font-size:12px; transition:transform .2s; flex:0 0 auto; }
+  .tnode.open > * > .chev, .tnode.open > .stepc > .stoprow > .chev { transform:rotate(180deg); color:var(--orange-text); }
+  .xbody { max-height:0; overflow:hidden; transition:max-height .3s ease; }
+  .tnode.open > .xbody { max-height:600px; }
+
+  /* phase */
+  .phead { display:flex; align-items:center; gap:11px; cursor:pointer; padding-bottom:6px; }
+  .phead .pthumb { width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg,#34343c,#222227); border:1px solid var(--border-hi); flex:0 0 36px; position:relative; }
+  .phead .pthumb::after { content:'🏗'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; opacity:.85; }
+  .phead .ptt { flex:1; } .phead .ptt .pn { font-size:15px; font-weight:700; } .phead .ptt .ps { font-size:11.5px; color:var(--text-muted); margin-top:1px; }
+  .pbody { padding:2px 0 6px 47px; }
+  .pbody .desc { font-size:12px; color:var(--text-muted); line-height:1.55; padding:4px 0 8px; }
+  .sib { display:flex; justify-content:space-between; align-items:center; padding:9px 0; font-size:13px; color:var(--text-muted); border-top:1px solid var(--border); cursor:pointer; }
+  .sib:hover { color:var(--text-2); } .sib .chev { color:var(--text-dim); }
+  .divline { height:1px; background:var(--border); margin:4px 0 10px; }
+
+  /* milestone bar */
+  .msrow { display:flex; align-items:center; gap:10px; }
+  .msrow .dia { width:11px; height:11px; background:var(--text-muted); transform:rotate(45deg); flex:0 0 11px; }
+  .msbar { flex:1; display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 13px; position:relative; overflow:hidden; cursor:pointer; }
+  .msbar .mst { font-size:12.5px; font-weight:600; flex:1; }
+  .msbar .mp { color:var(--yellow-text); font-weight:700; font-size:11.5px; }
+  .msbar::after { content:''; position:absolute; left:0; bottom:0; height:2px; width:26%; background:var(--yellow); }
+  .msbody { padding:8px 0 4px 21px; }
+  .descbox { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:22px 16px; text-align:center; color:var(--text-dim); font-size:12px; }
+
+  /* spine for steps + tasks */
+  .spine { position:relative; padding-left:20px; margin-top:6px; }
+  .spine::before { content:''; position:absolute; left:6px; top:8px; bottom:8px; width:1.5px; background:var(--border); }
+
+  /* step card */
+  .stepc { border:1.5px solid var(--border); border-radius:13px; padding:13px 15px; cursor:pointer; }
+  .tnode.step.done > .stepc { border-color:var(--green-bd); background:var(--green-tint); }
+  .tnode.step.active > .stepc { border-color:var(--yellow-bd); background:var(--yellow-tint); }
+  .stoprow { display:flex; align-items:baseline; gap:8px; }
+  .stoprow .sno { font-size:17px; font-weight:800; }
+  .stoprow .sname { font-size:17px; font-weight:400; color:var(--text-2); flex:1; }
+  .stoprow .chev { align-self:center; }
+  .ssub { font-size:12px; color:var(--text-muted); margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tnode.open .ssub { display:none; }
+  .sfull { display:none; margin-top:7px; }
+  .tnode.open .sfull { display:block; }
+  .sfull p { margin:0 0 9px; font-size:12.5px; color:var(--text-2); line-height:1.55; }
+  .sfull .goal { color:var(--text-dim); text-align:center; padding:12px 0 4px; }
+
+  /* task row */
+  .trow { display:flex; align-items:center; gap:11px; padding:9px 4px; cursor:pointer; }
+  .trow .tsq { width:13px; height:13px; border-radius:3px; flex:0 0 13px; }
+  .trow .tsq.done{background:var(--green)} .trow .tsq.active{background:var(--yellow)} .trow .tsq.todo{background:var(--gray-mark)}
+  .trow .tn2 { flex:1; font-size:13px; }
+  .tnode.task.todo .trow .tn2 { color:var(--text-muted); }
+  .tbody { padding:0 4px 6px 24px; }
+  .tprompt { font-size:12.5px; color:var(--text-2); line-height:1.55; padding:2px 0 10px; }
+
+  /* decision shown under active task (visible even collapsed) */
+  .decided { display:flex; align-items:center; gap:9px; color:var(--green-text); font-weight:600; font-size:12.5px; padding:4px 4px 8px 24px; cursor:pointer; }
+  .decided .gd { width:8px; height:8px; border-radius:50%; background:var(--green); }
+  .decided .chev { color:var(--green-text); }
+  .decided b { color:var(--text); }
+  .considered { padding:0 4px 4px 36px; }
+  .cons { display:flex; align-items:center; gap:9px; padding:5px 0; color:var(--text-dim); font-size:12px; cursor:pointer; }
+  .cons:hover { color:var(--text-muted); } .cons .obox { width:11px; height:11px; border:1px solid var(--border-hi); border-radius:2px; flex:0 0 11px; } .cons .chev { font-size:11px; }
+  .considered .cstar { padding:4px 0 0 22px; color:var(--orange); font-size:13px; }
+  .substep { display:flex; align-items:center; gap:9px; padding:6px 4px; font-size:12px; color:var(--text-2); }
+  .substep.muted { color:var(--text-dim); } .substep .sd { width:8px; height:8px; border-radius:50%; border:1px solid var(--border-hi); flex:0 0 8px; } .substep.done .sd { background:var(--green); border-color:var(--green); }
+  .accept { font-size:11px; color:var(--text-dim); margin-top:4px; padding:8px 10px; border:1px dashed var(--border-hi); border-radius:8px; } .accept b { color:var(--text-muted); }
+  .durbar { display:flex; gap:8px; align-items:center; font-size:11px; color:var(--text-muted); margin-top:8px; } .durbar .pill { border:1px solid var(--border-hi); border-radius:7px; padding:3px 8px; cursor:pointer; color:var(--text-2); }
+
+  /* breadcrumb + you-are-here */
+  .crumbs { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; background:var(--bg-2); margin:0 -15px 12px; padding:13px 15px 11px; border-bottom:1px solid var(--border); font-size:11px; white-space:nowrap; overflow-x:auto; }
+  .crumbs::-webkit-scrollbar { height:0; }
+  .crumbs .lead { color:var(--orange-text); font-weight:700; letter-spacing:.03em; flex:0 0 auto; font-size:10px; }
+  .crumb-path { color:var(--text-muted); }
+  .crumb-path .cseg { color:var(--text-2); } .crumb-path .cseg.now { color:var(--orange-text); font-weight:700; }
+  .crumb-path .csep { color:var(--text-dim); margin:0 5px; }
+  .tnode.here > .stepc { border-color:var(--orange) !important; box-shadow:0 0 0 1px var(--orange-bd); }
+  .tnode.here > .trow { background:var(--orange-tint); border-radius:9px; }
+  .tnode.here > .msrow .msbar { border-color:var(--orange-bd); box-shadow:0 0 0 1px var(--orange-bd); }
+  .tnode.here > .phead { background:var(--orange-tint); border-radius:10px; padding:4px 6px; }
+  .here-tag { display:inline-flex; align-items:center; gap:4px; font-size:8.5px; font-weight:700; letter-spacing:.04em; color:var(--orange-text); background:var(--orange-tint); border:1px solid var(--orange-bd); border-radius:999px; padding:2px 7px; margin-left:8px; flex:0 0 auto; }
+
+  .toast { position:absolute; left:50%; bottom:98px; transform:translateX(-50%) translateY(10px); background:#27272b; border:1px solid var(--border-hi); color:var(--text); font-size:12px; font-weight:600; padding:9px 15px; border-radius:999px; opacity:0; pointer-events:none; transition:.2s; z-index:20; white-space:nowrap; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="page-title">Ganttsy — Chat Window · tree refined</h1>
+  <p class="page-sub">The tree opens collapsed (the full working list); tap any node's chevron to expand it to full detail — exactly your collapsed ↔ expanded states.</p>
+  <p class="hintbar"><b>Open the tree</b> (bar in A / chip in C). Then tap a chevron: <b>Phase</b> → description + Phase 2/3 · <b>Milestone</b> → description box · <b>Step</b> → full detailed card · <b>Task 2</b> → its options. The active task's decision &amp; "ideas considered" already show under it.</p>
+
+  <div class="showcase">
+
+    <!-- OPTION A -->
+    <div class="opt-col">
+      <div class="opt-cap"><span class="tag">OPTION A</span><h3>Top context bar</h3><p>Tap the bar to drop the full tree (collapsed). Expand any node for detail.</p></div>
+      <div class="shell" id="shellA">
+        <div class="statusbar"><span>9:41</span><span>􀙇 􀛨 􀛤</span></div>
+        <div class="app-header"><div class="back">‹</div><div class="title">Chat Window</div><div class="avatar-wrap"><div class="avatar"></div></div></div>
+        <div class="chat-space">
+          <div class="ctxbar" data-tree-toggle>
+            <div class="thumb"></div>
+            <div class="ct"><span class="l1">Build a Deck</span><span class="l2">M1 · Step 2 · <span class="y">Gather your strengths</span></span></div>
+            <div class="ring" style="--p:26"><span>26%</span></div>
+            <span class="exp">⌄</span>
+          </div>
+          <div class="tree-panel"><div class="tree-content"></div></div>
+          <div class="cv">
+            <div class="msg"><span class="g">G</span><div class="col"><div class="bub">Nice — Step 1's done. For <b>Plan it out</b>, which do you want to do first?
+              <div class="optbtns" data-chat-opts>
+                <div class="ob"><span class="k">A</span> Map the cast &amp; locations</div>
+                <div class="ob"><span class="k">B</span> Block the 3-act timing</div>
+                <div class="ob"><span class="k">+</span> <span class="w">Other — write your own…</span></div>
+              </div>
+              <div class="hint">↳ or tell me you'd rather write it yourself & I'll just guide you.</div>
+            </div><span class="time">9:42</span></div></div>
+            <div class="msg me answer-pick"><div class="col"><div class="bub"></div><span class="time">9:42</span></div></div>
+            <div class="msg answer-msg"><span class="g">G</span><div class="col"><div class="bub">Done — here's a first draft. Skim it:
+              <div class="ans" data-brief></div>
+              <div class="filed"><span class="gd"></span> Filed to Task 1 · Collect your thoughts</div>
+              <br><span class="feedback">✓ Good, let's do more of this!</span>
+            </div><span class="time">9:43</span></div></div>
+          </div>
+          <div class="inputbar"><span class="plus">+</span><div class="field"><input placeholder="Ask anything" /><span class="mic">🎙</span></div></div>
+        </div>
+        <div class="tabbar"><div class="navpill"><div class="navtab"><span class="ic">⌂</span>Home</div><div class="navtab active"><span class="logo"><i></i><i></i><i></i></span>Projects</div><div class="navtab"><span class="ic">⚑</span>Follow</div><div class="navtab"><span class="ic">⊕</span>Create</div></div><div class="search-fab">⌕</div></div>
+        <div class="toast"></div>
+      </div>
+    </div>
+
+    <!-- OPTION C -->
+    <div class="opt-col">
+      <div class="opt-cap"><span class="tag">OPTION C</span><h3>Floating chip</h3><p>Tap the chip to drop the full tree as an overlay. Expand any node for detail.</p></div>
+      <div class="shell" id="shellC">
+        <div class="statusbar"><span>9:41</span><span>􀙇 􀛨 􀛤</span></div>
+        <div class="app-header"><div class="back">‹</div><div class="title">Chat Window</div><div class="avatar-wrap"><div class="avatar"></div></div></div>
+        <div class="chat-space">
+          <div class="chip" data-tree-toggle>
+            <div class="cring" style="--p:26"><b>26%</b></div>
+            <div class="ctx"><div class="a">Step 2 · Task 2</div><div class="b">Build a Deck · M1</div></div>
+            <span class="cexp">⌄</span>
+          </div>
+          <div class="chip-overlay"><div class="oh">PROJECT TREE <span class="x" data-close>✕</span></div><div class="tree-content"></div></div>
+          <div class="cv" style="padding-top:56px;">
+            <div class="msg"><span class="g">G</span><div class="col"><div class="bub">Nice — Step 1's done. For <b>Plan it out</b>, which first?
+              <div class="optbtns" data-chat-opts>
+                <div class="ob"><span class="k">A</span> Map the cast &amp; locations</div>
+                <div class="ob"><span class="k">B</span> Block the 3-act timing</div>
+                <div class="ob"><span class="k">+</span> <span class="w">Other — write your own…</span></div>
+              </div>
+            </div><span class="time">9:42</span></div></div>
+            <div class="msg me answer-pick"><div class="col"><div class="bub"></div><span class="time">9:42</span></div></div>
+            <div class="msg answer-msg"><span class="g">G</span><div class="col"><div class="bub">Done — here's the brief:
+              <div class="ans" data-brief></div>
+              <div class="filed"><span class="gd"></span> Filed to Task 1</div>
+              <br><span class="feedback">✓ Good, let's do more of this!</span>
+            </div><span class="time">9:43</span></div></div>
+          </div>
+          <div class="inputbar"><span class="plus">+</span><div class="field"><input placeholder="Ask anything" /><span class="mic">🎙</span></div></div>
+        </div>
+        <div class="tabbar"><div class="navpill"><div class="navtab"><span class="ic">⌂</span>Home</div><div class="navtab active"><span class="logo"><i></i><i></i><i></i></span>Projects</div><div class="navtab"><span class="ic">⚑</span>Follow</div><div class="navtab"><span class="ic">⊕</span>Create</div></div><div class="search-fab">⌕</div></div>
+        <div class="toast"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function briefHTML(){
+    return `
+      <div class="ah"><span class="star">★</span><span class="lbl">EPISODE BRIEF</span><span class="dots">⋯</span>
+        <div class="menu">
+          <div class="mi"><span class="ic">✎</span> Rename the answer</div>
+          <div class="mi"><span class="ic">↗</span> Save into docs</div>
+          <div class="mi star act-star"><span class="ic">★</span> Star it</div>
+          <div class="msep"></div>
+          <div class="mi danger"><span class="ic">🗑</span> Delete it</div>
+        </div>
+      </div>
+      <div class="frow"><span class="k2">Title</span><span class="v2 title">“Turning Point”</span></div>
+      <div class="frow"><span class="k2">Runtime</span><span class="v2">18–25 minutes</span></div>
+      <div class="frow"><span class="k2">Tone</span><span class="v2">Intimate, observational, emotionally grounded; cinematic but restrained</span></div>
+      <div class="detail"><div class="frow"><span class="k2">Logline</span><span class="v2">Follow Maya (mid-30s), a former community organizer navigating a personal &amp; professional breakup while restarting a neighborhood outreach program.</span></div><div class="frow"><span class="k2">Arc</span><span class="v2">Setup (0–6) · Confrontation (6–16) · Decision &amp; small victory (16–22)</span></div></div>
+      <div class="more">⌄ show logline &amp; 3-act arc</div>`;
+  }
+  document.querySelectorAll('[data-brief]').forEach(el => el.innerHTML = briefHTML());
+
+  function treeHTML(){
+    return `
+    <div class="crumbs"><span class="crumb-path"></span></div>
+    <!-- PHASE -->
+    <div class="tnode phase" data-path="Build a Deck › Phase 1">
+      <div class="phead" data-exp>
+        <div class="pthumb"></div>
+        <div class="ptt"><div class="pn">BUILD A DECK</div><div class="ps">Phase 1: Planning and Design</div></div>
+        <span class="chev">⌄</span>
+      </div>
+      <div class="xbody">
+        <div class="pbody">
+          <p class="desc">This phase consists of gathering the materials, understanding risks, dependencies, and your space.</p>
+          <div class="sib">Phase 2: Building <span class="chev">⌄</span></div>
+          <div class="sib">Phase 3: Staining <span class="chev">⌄</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MILESTONE -->
+    <div class="tnode ms" data-path="Build a Deck › Phase 1 › Milestone 1">
+      <div class="msrow"><span class="dia"></span>
+        <div class="msbar" data-exp><span class="mst">Milestone 1 / 2 : Decide Requirements</span><span class="mp">26%</span><span class="chev">⌄</span></div>
+      </div>
+      <div class="xbody"><div class="msbody"><div class="descbox">Define the requirements before recording — scope, format, runtime targets, tone, and the creative brief for each episode in the deck.</div></div></div>
+    </div>
+
+    <div class="divline"></div>
+
+    <!-- STEPS + TASKS on a spine -->
+    <div class="spine">
+      <div class="tnode step done" data-path="Build a Deck › Phase 1 › M1 › Step 1">
+        <div class="stepc" data-exp>
+          <div class="stoprow"><span class="sno">STEP 1 -</span><span class="sname">Make Choices</span><span class="chev">⌄</span></div>
+          <div class="ssub">Identify what you will need in order to complete this…</div>
+          <div class="sfull">
+            <p>Identify what you will need in order to complete this, but in extended form. Here we will get a more detailed description.</p>
+            <p class="goal">Description of what you will learn (connected to your goals)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tnode step active" data-path="Build a Deck › Phase 1 › M1 › Step 2">
+        <div class="stepc" data-exp>
+          <div class="stoprow"><span class="sno">STEP 2 –</span><span class="sname">Plan it out</span><span class="chev">⌄</span></div>
+          <div class="ssub">You will need to plan accordingly for this</div>
+          <div class="sfull">
+            <p>You will need to plan accordingly for this — break the plan into tasks and work through them in order.</p>
+            <div class="durbar">Step duration <span class="pill">≈ 2 days ✎</span><span style="color:var(--text-dim)">editable</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tnode task done" data-path="Build a Deck › Phase 1 › M1 › Step 2 › Task 1">
+        <div class="trow" data-exp><span class="tsq done"></span><span class="tn2">Task 1 : Collect your thoughts</span><span class="chev">⌄</span></div>
+        <div class="xbody"><div class="tbody"><p class="tprompt">Collect references &amp; constraints before drafting. Result is filed below.</p>
+          <div class="substep done"><span class="sd"></span>Gathered 6 references</div>
+          <div class="substep done"><span class="sd"></span>Noted 3 constraints</div>
+        </div></div>
+      </div>
+
+      <div class="tnode task active here" data-path="Build a Deck › Phase 1 › M1 › Step 2 › Task 2">
+        <div class="trow" data-exp><span class="tsq active"></span><span class="tn2">Task 2 : Gather your strengths</span><span class="here-tag">● HERE</span><span class="chev">⌄</span></div>
+        <div class="xbody"><div class="tbody">
+          <p class="tprompt">Task 2 is all about XYZ — you'll need to do this, that, and the other. Select how you want to proceed.</p>
+          <div class="optbtns treeopts">
+            <div class="ob"><span class="k">A</span> Map the cast &amp; locations</div>
+            <div class="ob"><span class="k">B</span> Block the 3-act timing</div>
+            <div class="ob"><span class="k">+</span> <span class="w">Other — write your own…</span></div>
+          </div>
+        </div></div>
+        <!-- decision + considered show even when collapsed -->
+        <div class="decided" data-brief-toggle><span class="gd"></span><span class="chev">⌄</span> We proceeded by selecting: <b>Option A</b></div>
+        <div class="brief-slot"><div class="ans" data-brief style="margin:0 4px 8px 24px;"></div></div>
+        <div class="considered">
+          <div class="cons"><span class="chev">⌄</span><span class="obox"></span> Some ideas were considered 1–3…</div>
+          <div class="cons"><span class="chev">⌄</span><span class="obox"></span> Some ideas were considered 1–3…</div>
+          <div class="cons"><span class="chev">⌄</span><span class="obox"></span> Some ideas were considered 1–3…</div>
+          <div class="cstar">★</div>
+        </div>
+      </div>
+
+      <div class="tnode task todo" data-path="Build a Deck › Phase 1 › M1 › Step 2 › Task 3">
+        <div class="trow" data-exp><span class="tsq todo"></span><span class="tn2">Task 3 : Make it happen</span><span class="chev">⌄</span></div>
+        <div class="xbody"><div class="tbody">
+          <p class="tprompt">Make it happen — turn the plan into action. Unlocks once Task 2 is done.</p>
+          <div class="accept"><b>Acceptance:</b> a scheduled shoot plan with dates &amp; a confirmed location — not just "looks done".</div>
+        </div></div>
+      </div>
+    </div>`;
+  }
+  document.querySelectorAll('.tree-content').forEach(el => { el.innerHTML = treeHTML(); el.querySelectorAll('[data-brief]').forEach(b => b.innerHTML = briefHTML()); });
+  // collapse the in-tree brief by default (shown when decision row tapped)
+  document.querySelectorAll('.brief-slot').forEach(s => s.style.display = 'none');
+
+  function toast(shell, text){ const t = shell.querySelector('.toast'); if(!t) return; t.textContent = text; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 1600); }
+
+  // breadcrumb "you are here" — highlight current node + render path
+  function setHere(scope, node){
+    if (!node) return;
+    scope.querySelectorAll('.tnode.here').forEach(n => { n.classList.remove('here'); const t = n.querySelector('.here-tag'); if (t) t.remove(); });
+    node.classList.add('here');
+    // add ● HERE tag to the node's header row if not present
+    const hdr = node.querySelector(':scope > .stepc .stoprow, :scope > .trow, :scope > .msrow .msbar, :scope > .phead');
+    if (hdr && !hdr.querySelector('.here-tag')) {
+      const tag = document.createElement('span'); tag.className = 'here-tag'; tag.textContent = '● HERE';
+      const chev = hdr.querySelector('.chev'); if (chev) hdr.insertBefore(tag, chev); else hdr.appendChild(tag);
+    }
+    const path = node.getAttribute('data-path') || '';
+    const cp = scope.querySelector('.crumb-path');
+    if (cp && path) {
+      const segs = path.split('›').map(s => s.trim());
+      cp.innerHTML = segs.map((s,i) => `<span class="cseg${i===segs.length-1?' now':''}">${s}</span>`).join('<span class="csep">›</span>');
+    }
+  }
+
+  document.querySelectorAll('.shell').forEach(shell => {
+    shell.querySelectorAll('[data-tree-toggle]').forEach(tog => tog.addEventListener('click', (e) => { if (e.target.closest('.tree-content') || e.target.closest('[data-close]')) return; shell.classList.toggle('tree-open'); }));
+    const closeBtn = shell.querySelector('[data-close]');
+    if (closeBtn) closeBtn.addEventListener('click', (e)=>{ e.stopPropagation(); shell.classList.remove('tree-open'); });
+
+    // node expand (single chevron → detail) + set "you are here"
+    shell.querySelectorAll('[data-exp]').forEach(h => h.addEventListener('click', (e) => { e.stopPropagation(); const node = h.closest('.tnode'); node.classList.toggle('open'); setHere(shell, node); }));
+    // initialise breadcrumb to the default active node
+    setHere(shell, shell.querySelector('.tnode.here') || shell.querySelector('.tnode.task.active'));
+    // in-tree decision row toggles the filed brief
+    shell.querySelectorAll('[data-brief-toggle]').forEach(d => d.addEventListener('click', (e)=>{ e.stopPropagation(); const slot = d.parentElement.querySelector('.brief-slot'); slot.style.display = (slot.style.display==='none') ? 'block' : 'none'; }));
+    shell.querySelectorAll('.sib, .cons').forEach(r => r.addEventListener('click', (e) => { e.stopPropagation(); toast(shell, 'Open: ' + r.textContent.trim().replace(/⌄.*$/,'').replace(/★/,'').trim()); }));
+
+    shell.querySelectorAll('.optbtns').forEach(group => {
+      group.querySelectorAll('.ob').forEach(ob => ob.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (group.classList.contains('locked')) return;
+        ob.classList.add('selected'); group.classList.add('locked');
+        const letter = ob.querySelector('.k').textContent.trim();
+        if (group.hasAttribute('data-chat-opts')) {
+          shell.querySelector('.answer-pick .bub').textContent = (letter === '+') ? 'Let me write my own…' : letter;
+          const ansMsg = shell.querySelector('.answer-msg');
+          setTimeout(()=>{ ansMsg.classList.add('show'); ansMsg.scrollIntoView({behavior:'smooth', block:'end'}); }, 450);
+        } else { toast(shell, 'Selected Option ' + letter); }
+      }));
+    });
+
+    shell.querySelectorAll('.more').forEach(m => m.addEventListener('click', (e) => { e.stopPropagation(); const ans = m.closest('.ans'); ans.classList.toggle('expanded'); m.textContent = ans.classList.contains('expanded') ? '⌃ hide details' : '⌄ show logline & 3-act arc'; }));
+    shell.querySelectorAll('.dots').forEach(d => d.addEventListener('click', (e) => { e.stopPropagation(); const menu = d.parentElement.querySelector('.menu'); const open = menu.classList.contains('open'); shell.querySelectorAll('.menu.open').forEach(mm=>mm.classList.remove('open')); if(!open) menu.classList.add('open'); }));
+    shell.querySelectorAll('.mi').forEach(mi => mi.addEventListener('click', (e) => { e.stopPropagation(); const label = mi.textContent.trim(); const menu = mi.closest('.menu'); menu.classList.remove('open'); if (mi.classList.contains('act-star')) { const star = menu.closest('.ah').querySelector('.star'); if (star) star.classList.toggle('on'); } toast(shell, label); }));
+    shell.querySelectorAll('.ans .ah .star').forEach(s => s.addEventListener('click', (e)=>{ e.stopPropagation(); s.classList.toggle('on'); toast(shell, s.classList.contains('on')?'Starred':'Unstarred'); }));
+    shell.querySelectorAll('.durbar .pill').forEach(p => p.addEventListener('click', (e)=>{ e.stopPropagation(); toast(shell, 'Edit step duration'); }));
+    shell.querySelectorAll('.stop').forEach(s => s.addEventListener('click', (e)=>{ e.stopPropagation(); toast(shell,'Stopped — draft saved'); }));
+    shell.querySelectorAll('.feedback').forEach(f => f.addEventListener('click', ()=>toast(shell,'Thanks — pinned to memory')));
+    const inp = shell.querySelector('.inputbar input');
+    if (inp) inp.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && inp.value.trim()){ toast(shell,'Sent: '+inp.value.trim()); inp.value=''; } });
+    shell.querySelectorAll('.navtab').forEach(tab => tab.addEventListener('click', ()=>{ shell.querySelectorAll('.navtab').forEach(t=>t.classList.remove('active')); tab.classList.add('active'); }));
+  });
+  document.addEventListener('click', (e)=>{ if (!e.target.closest('.ah')) document.querySelectorAll('.menu.open').forEach(m=>m.classList.remove('open')); });
+</script>
+</body>
+</html>

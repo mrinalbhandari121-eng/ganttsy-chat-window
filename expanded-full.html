@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganttsy — Full expanded screen (for Figma)</title>
+<style>
+  :root {
+    --bg:#151517; --bg-2:#101012; --surface:#1E1E20; --surface-hi:#262629;
+    --border:#2C2C30; --border-hi:#3a3a40;
+    --text:#ECECEE; --text-2:#C7C7CD; --text-muted:#8C8C94; --text-dim:#5d5d65;
+    --orange:#FF9B1A; --orange-text:#FFB658; --orange-tint:rgba(255,155,26,.12); --orange-bd:rgba(255,155,26,.40);
+    --green:#2BD27E; --green-text:#52DDA1; --green-tint:rgba(43,210,126,.11); --green-bd:rgba(43,210,126,.55);
+    --yellow:#E8B53C; --yellow-text:#F0C45C; --yellow-tint:rgba(232,181,60,.11); --yellow-bd:rgba(232,181,60,.6);
+    --gray-mark:#3c3c42; --red:#E97070;
+  }
+  *,*::before,*::after { box-sizing:border-box; }
+  html,body { margin:0; padding:0; background:#0b0b0d; color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:13px; line-height:1.45; -webkit-font-smoothing:antialiased; }
+  .wrap { padding:40px; display:flex; gap:40px; align-items:flex-start; }
+  .cap { font-size:12px; color:var(--text-muted); max-width:260px; line-height:1.6; }
+  .cap b { color:var(--text); }
+  .ctas { display:flex; flex-direction:column; gap:10px; margin:4px 0 12px; }
+  .cta { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:11px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; border:1px solid var(--orange); background:var(--orange); color:#1a1206; transition:.15s; }
+  .cta:hover { filter:brightness(1.06); transform:translateY(-1px); }
+  .cta.ghost { background:transparent; color:var(--orange-text); }
+  .cta.ghost:hover { background:var(--orange-tint); }
+  .cta-note { font-size:11.5px; color:var(--text-dim); line-height:1.5; } .cta-note b { color:var(--text-2); }
+
+  /* phone frame — natural height so the whole expanded screen captures in one shot */
+  .shell { width:392px; border-radius:44px; background:var(--bg-2); border:1px solid #232326; box-shadow:0 30px 70px rgba(0,0,0,.6); overflow:hidden; position:relative; }
+  .statusbar { height:34px; display:flex; align-items:center; justify-content:space-between; padding:9px 28px 0; font-size:12px; font-weight:700; color:#fff; }
+  .app-header { display:flex; align-items:center; justify-content:space-between; padding:3px 16px 11px; }
+  .app-header .back { width:44px; height:44px; border-radius:50%; background:#1d1d20; border:1px solid #2c2c31; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px; }
+  .app-header .title { font-size:19px; font-weight:700; color:#fff; }
+  .app-header .avatar-wrap { width:44px; height:44px; position:relative; display:flex; align-items:center; justify-content:center; }
+  .app-header .avatar { width:36px; height:36px; border-radius:50%; background:radial-gradient(circle at 40% 30%, #d8b07a, #8a6638 70%); border:1.5px solid #0f0c0b; }
+  .app-header .avatar-wrap::after { content:''; position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(from 0deg, transparent 0 7deg, rgba(255,255,255,.45) 7deg 8.5deg, transparent 8.5deg 30deg, rgba(255,255,255,.45) 30deg 31.5deg, transparent 31.5deg 60deg, rgba(255,255,255,.45) 60deg 61.5deg, transparent 61.5deg 90deg, rgba(255,255,255,.45) 90deg 91.5deg, transparent 91.5deg 120deg, rgba(255,255,255,.45) 120deg 121.5deg, transparent 121.5deg 150deg, rgba(255,255,255,.45) 150deg 151.5deg, transparent 151.5deg 180deg, rgba(255,255,255,.45) 180deg 181.5deg, transparent 181.5deg 210deg, rgba(255,255,255,.45) 210deg 211.5deg, transparent 211.5deg 240deg, rgba(255,255,255,.45) 240deg 241.5deg, transparent 241.5deg 270deg, rgba(255,255,255,.45) 270deg 271.5deg, transparent 271.5deg 300deg, rgba(255,255,255,.45) 300deg 301.5deg, transparent 301.5deg 330deg, rgba(255,255,255,.45) 330deg 331.5deg, transparent 331.5deg 360deg);
+    -webkit-mask:radial-gradient(circle, transparent 0 18px, #000 18px 22px, transparent 22px); mask:radial-gradient(circle, transparent 0 18px, #000 18px 22px, transparent 22px); }
+  .chat-space { margin:0 10px 10px; border-radius:26px; border:1px solid var(--border); background:var(--bg); overflow:hidden; }
+
+  /* context bar */
+  .ctxbar { display:flex; align-items:center; gap:11px; padding:12px 15px; border-bottom:1px solid var(--border); background:var(--bg-2); }
+  .ctxbar .thumb { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#34343c,#222227); border:1px solid var(--border-hi); flex:0 0 34px; position:relative; }
+  .ctxbar .thumb::after { content:'🏗'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; opacity:.85; }
+  .ctxbar .ct { display:flex; flex-direction:column; min-width:0; flex:1; }
+  .ctxbar .ct .l1 { font-size:13px; font-weight:700; }
+  .ctxbar .ct .l2 { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .ctxbar .ct .l2 .y { color:var(--yellow-text); font-weight:600; }
+  .ring { width:34px; height:34px; border-radius:50%; flex:0 0 34px; position:relative; background:conic-gradient(var(--yellow) 26%, rgba(255,255,255,.09) 0); }
+  .ring::after { content:''; position:absolute; inset:3.5px; border-radius:50%; background:var(--bg-2); }
+  .ring span { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; color:var(--yellow-text); z-index:1; }
+  .ctxbar .exp { color:var(--orange-text); font-size:14px; transform:rotate(180deg); }
+
+  /* breadcrumb sticky bar */
+  .crumbs { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; background:var(--bg-2); padding:13px 15px 11px; border-bottom:1px solid var(--border); font-size:11px; white-space:nowrap; overflow-x:auto; }
+  .crumb-path .cseg { color:var(--text-2); } .crumb-path .cseg.now { color:var(--orange-text); font-weight:700; } .crumb-path .csep { color:var(--text-dim); margin:0 5px; }
+
+  .tree-content { padding:0 15px 14px; }
+
+  /* TREE */
+  .tnode { margin-bottom:10px; }
+  .chev { color:var(--orange-text); font-size:12px; transform:rotate(180deg); flex:0 0 auto; }
+  .tnode.here > .stepc { border-color:var(--orange) !important; box-shadow:0 0 0 1px var(--orange-bd); }
+  .tnode.here > .trow { background:var(--orange-tint); border-radius:9px; }
+
+  .phead { display:flex; align-items:center; gap:11px; padding-bottom:6px; }
+  .phead .pthumb { width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg,#34343c,#222227); border:1px solid var(--border-hi); flex:0 0 36px; position:relative; }
+  .phead .pthumb::after { content:'🏗'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; opacity:.85; }
+  .phead .ptt { flex:1; } .phead .ptt .pn { font-size:15px; font-weight:700; } .phead .ptt .ps { font-size:11.5px; color:var(--text-muted); margin-top:1px; }
+  .pbody { padding:2px 0 6px 47px; }
+  .pbody .desc { font-size:12px; color:var(--text-muted); line-height:1.55; padding:4px 0 8px; }
+  .sib { display:flex; justify-content:space-between; align-items:center; padding:9px 0; font-size:13px; color:var(--text-muted); border-top:1px solid var(--border); }
+  .sib .chev { color:var(--text-dim); transform:none; }
+  .divline { height:1px; background:var(--border); margin:4px 0 10px; }
+
+  .msrow { display:flex; align-items:center; gap:10px; }
+  .msrow .dia { width:11px; height:11px; background:var(--text-muted); transform:rotate(45deg); flex:0 0 11px; }
+  .msbar { flex:1; display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 13px; position:relative; overflow:hidden; }
+  .msbar .mst { font-size:12.5px; font-weight:600; flex:1; }
+  .msbar .mp { color:var(--yellow-text); font-weight:700; font-size:11.5px; }
+  .msbar::after { content:''; position:absolute; left:0; bottom:0; height:2px; width:26%; background:var(--yellow); }
+  .msbody { padding:8px 0 4px 21px; }
+  .descbox { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px 16px; text-align:center; color:var(--text-dim); font-size:12px; line-height:1.5; }
+
+  .spine { position:relative; padding-left:20px; margin-top:6px; }
+  .spine::before { content:''; position:absolute; left:6px; top:8px; bottom:8px; width:1.5px; background:var(--border); }
+
+  .stepc { border:1.5px solid var(--border); border-radius:13px; padding:13px 15px; }
+  .tnode.step.done > .stepc { border-color:var(--green-bd); background:var(--green-tint); }
+  .tnode.step.active > .stepc { border-color:var(--yellow-bd); background:var(--yellow-tint); }
+  .stoprow { display:flex; align-items:baseline; gap:8px; }
+  .stoprow .sno { font-size:17px; font-weight:800; } .stoprow .sname { font-size:17px; font-weight:400; color:var(--text-2); flex:1; } .stoprow .chev { align-self:center; }
+  .sfull { margin-top:7px; } .sfull p { margin:0 0 9px; font-size:12.5px; color:var(--text-2); line-height:1.55; } .sfull .goal { color:var(--text-dim); text-align:center; padding:12px 0 4px; }
+  .durbar { display:flex; gap:8px; align-items:center; font-size:11px; color:var(--text-muted); margin-top:8px; } .durbar .pill { border:1px solid var(--border-hi); border-radius:7px; padding:3px 8px; color:var(--text-2); }
+
+  .trow { display:flex; align-items:center; gap:11px; padding:9px 4px; }
+  .trow .tsq { width:13px; height:13px; border-radius:3px; flex:0 0 13px; }
+  .trow .tsq.done{background:var(--green)} .trow .tsq.active{background:var(--yellow)} .trow .tsq.todo{background:var(--gray-mark)}
+  .trow .tn2 { flex:1; font-size:13px; } .tnode.task.todo .trow .tn2 { color:var(--text-muted); }
+  .here-tag { display:inline-flex; align-items:center; gap:4px; font-size:8.5px; font-weight:700; letter-spacing:.04em; color:var(--orange-text); background:var(--orange-tint); border:1px solid var(--orange-bd); border-radius:999px; padding:2px 7px; }
+  .tbody { padding:0 4px 6px 24px; }
+  .tprompt { font-size:12.5px; color:var(--text-2); line-height:1.55; padding:2px 0 10px; }
+  .substep { display:flex; align-items:center; gap:9px; padding:6px 4px; font-size:12px; color:var(--text-2); }
+  .substep.muted { color:var(--text-dim); } .substep .sd { width:8px; height:8px; border-radius:50%; border:1px solid var(--border-hi); flex:0 0 8px; } .substep.done .sd { background:var(--green); border-color:var(--green); }
+  .accept { font-size:11px; color:var(--text-dim); margin-top:4px; padding:8px 10px; border:1px dashed var(--border-hi); border-radius:8px; } .accept b { color:var(--text-muted); }
+
+  .optbtns { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  .ob { display:flex; align-items:center; gap:11px; border:1px solid var(--border-hi); background:var(--surface-hi); border-radius:10px; padding:10px 12px; font-size:13px; }
+  .ob .k { width:22px; height:22px; border-radius:50%; border:1px solid var(--border-hi); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; color:var(--text-muted); flex:0 0 22px; }
+  .ob.selected { border-color:var(--green); background:var(--green-tint); } .ob.selected .k { border-color:var(--green); color:var(--green-text); } .ob .w { color:var(--text-dim); }
+
+  .decided { display:flex; align-items:center; gap:9px; color:var(--green-text); font-weight:600; font-size:12.5px; padding:6px 4px 8px 24px; } .decided .gd { width:8px; height:8px; border-radius:50%; background:var(--green); } .decided b { color:var(--text); } .decided .chev { color:var(--green-text); transform:none; }
+  .considered { padding:0 4px 4px 36px; } .cons { display:flex; align-items:center; gap:9px; padding:5px 0; color:var(--text-dim); font-size:12px; } .cons .obox { width:11px; height:11px; border:1px solid var(--border-hi); border-radius:2px; flex:0 0 11px; } .cons .chev { font-size:11px; transform:none; color:var(--text-dim); } .considered .cstar { padding:4px 0 0 22px; color:var(--orange); font-size:13px; }
+
+  .ans { margin:6px 4px 8px 24px; border:1px solid var(--border); background:var(--bg-2); border-radius:12px; padding:12px 13px; position:relative; }
+  .ans .ah { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+  .ans .ah .star { color:var(--orange); font-size:13px; } .ans .ah .lbl { font-size:9.5px; font-weight:700; letter-spacing:.07em; color:var(--text-dim); } .ans .ah .dots { margin-left:auto; color:var(--text-muted); font-size:18px; font-weight:700; }
+  .ans .frow { display:flex; gap:10px; padding:5px 0; border-top:1px solid var(--border); } .ans .frow:first-of-type { border-top:0; }
+  .ans .frow .k2 { font-size:10px; color:var(--text-dim); font-weight:600; letter-spacing:.03em; text-transform:uppercase; width:62px; flex:0 0 62px; padding-top:1px; }
+  .ans .frow .v2 { font-size:12.5px; color:var(--text-2); flex:1; } .ans .frow .v2.title { font-size:15px; font-weight:700; color:var(--text); }
+
+  .inputbar { border-top:1px solid var(--border); background:var(--bg-2); padding:12px 13px; display:flex; align-items:center; gap:10px; }
+  .inputbar .plus { width:34px; height:34px; border-radius:50%; background:var(--surface-hi); border:1px solid var(--border-hi); display:flex; align-items:center; justify-content:center; color:var(--text-2); font-size:17px; flex:0 0 34px; }
+  .inputbar .field { flex:1; height:42px; background:var(--surface); border:1px solid var(--border-hi); border-radius:21px; display:flex; align-items:center; padding:0 15px; gap:10px; }
+  .inputbar .field .ph { color:var(--text-dim); flex:1; font-size:13px; } .inputbar .field .mic { color:var(--text-muted); }
+
+  .tabbar { display:flex; align-items:center; gap:9px; padding:4px 12px 16px; }
+  .navpill { flex:1; height:62px; background:#141416; border:1px solid #242427; border-radius:31px; display:flex; align-items:center; justify-content:space-around; padding:0 6px; }
+  .navtab { display:flex; flex-direction:column; align-items:center; gap:3px; color:#cbcbd0; font-size:10.5px; font-weight:500; padding:5px 7px; }
+  .navtab .ic { font-size:17px; line-height:1; }
+  .navtab.active { background:#2a2412; border-radius:19px; padding:8px 14px; color:var(--orange-text); }
+  .navtab.active .logo { display:flex; flex-direction:column; gap:2px; align-items:center; }
+  .navtab.active .logo i { display:block; height:3px; border-radius:2px; background:var(--orange); }
+  .navtab.active .logo i:nth-child(1){width:15px;} .navtab.active .logo i:nth-child(2){width:10px;} .navtab.active .logo i:nth-child(3){width:13px;}
+  .search-fab { width:62px; height:62px; border-radius:50%; background:#141416; border:1px solid #242427; display:flex; align-items:center; justify-content:center; color:#fff; font-size:19px; flex:0 0 62px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="shell">
+    <div class="statusbar"><span>9:41</span><span>􀙇 􀛨 􀛤</span></div>
+    <div class="app-header"><div class="back">‹</div><div class="title">Chat Window</div><div class="avatar-wrap"><div class="avatar"></div></div></div>
+
+    <div class="chat-space">
+      <div class="ctxbar">
+        <div class="thumb"></div>
+        <div class="ct"><span class="l1">Build a Deck</span><span class="l2">M1 · Step 2 · <span class="y">Gather your strengths</span></span></div>
+        <div class="ring"><span>26%</span></div>
+        <span class="exp">⌄</span>
+      </div>
+
+      <div class="crumbs"><span class="crumb-path"><span class="cseg">Build a Deck</span><span class="csep">›</span><span class="cseg">Phase 1</span><span class="csep">›</span><span class="cseg">M1</span><span class="csep">›</span><span class="cseg">Step 2</span><span class="csep">›</span><span class="cseg now">Task 2</span></span></div>
+
+      <div class="tree-content">
+
+        <!-- PHASE expanded -->
+        <div class="tnode phase">
+          <div class="phead"><div class="pthumb"></div><div class="ptt"><div class="pn">BUILD A DECK</div><div class="ps">Phase 1: Planning and Design</div></div><span class="chev">⌄</span></div>
+          <div class="pbody">
+            <p class="desc">This phase consists of gathering the materials, understanding risks, dependencies, and your space.</p>
+            <div class="sib">Phase 2: Building <span class="chev">⌄</span></div>
+            <div class="sib">Phase 3: Staining <span class="chev">⌄</span></div>
+          </div>
+        </div>
+
+        <!-- MILESTONE expanded -->
+        <div class="tnode ms">
+          <div class="msrow"><span class="dia"></span><div class="msbar"><span class="mst">Milestone 1 / 2 : Decide Requirements</span><span class="mp">26%</span><span class="chev">⌄</span></div></div>
+          <div class="msbody"><div class="descbox">Define the requirements before recording — scope, format, runtime targets, tone, and the creative brief for each episode in the deck.</div></div>
+        </div>
+
+        <div class="divline"></div>
+
+        <div class="spine">
+          <!-- STEP 1 expanded -->
+          <div class="tnode step done">
+            <div class="stepc">
+              <div class="stoprow"><span class="sno">STEP 1 -</span><span class="sname">Make Choices</span><span class="chev">⌄</span></div>
+              <div class="sfull">
+                <p>Identify what you will need in order to complete this, but in extended form. Here we will get a more detailed description.</p>
+                <p class="goal">Description of what you will learn (connected to your goals)</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 2 expanded -->
+          <div class="tnode step active">
+            <div class="stepc">
+              <div class="stoprow"><span class="sno">STEP 2 –</span><span class="sname">Plan it out</span><span class="chev">⌄</span></div>
+              <div class="sfull">
+                <p>You will need to plan accordingly for this — break the plan into tasks and work through them in order.</p>
+                <div class="durbar">Step duration <span class="pill">≈ 2 days ✎</span><span style="color:var(--text-dim)">editable</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 1 expanded -->
+          <div class="tnode task done">
+            <div class="trow"><span class="tsq done"></span><span class="tn2">Task 1 : Collect your thoughts</span><span class="chev">⌄</span></div>
+            <div class="tbody">
+              <p class="tprompt">Collect references &amp; constraints before drafting. Result is filed below.</p>
+              <div class="substep done"><span class="sd"></span>Gathered 6 references</div>
+              <div class="substep done"><span class="sd"></span>Noted 3 constraints</div>
+            </div>
+          </div>
+
+          <!-- TASK 2 expanded (HERE) -->
+          <div class="tnode task active here">
+            <div class="trow"><span class="tsq active"></span><span class="tn2">Task 2 : Gather your strengths</span><span class="here-tag">● HERE</span><span class="chev">⌄</span></div>
+            <div class="tbody">
+              <p class="tprompt">Task 2 is all about XYZ — you'll need to do this, that, and the other. Select how you want to proceed.</p>
+              <div class="optbtns">
+                <div class="ob selected"><span class="k">A</span> Map the cast &amp; locations</div>
+                <div class="ob"><span class="k">B</span> Block the 3-act timing</div>
+                <div class="ob"><span class="k">+</span> <span class="w">Other — write your own…</span></div>
+              </div>
+            </div>
+            <div class="decided"><span class="gd"></span><span class="chev">⌄</span> We proceeded by selecting: <b>Option A</b></div>
+            <div class="ans">
+              <div class="ah"><span class="star">★</span><span class="lbl">EPISODE BRIEF</span><span class="dots">⋯</span></div>
+              <div class="frow"><span class="k2">Title</span><span class="v2 title">“Turning Point”</span></div>
+              <div class="frow"><span class="k2">Runtime</span><span class="v2">18–25 minutes</span></div>
+              <div class="frow"><span class="k2">Tone</span><span class="v2">Intimate, observational, emotionally grounded; cinematic but restrained</span></div>
+              <div class="frow"><span class="k2">Logline</span><span class="v2">Follow Maya (mid-30s), a former community organizer navigating a personal &amp; professional breakup while restarting a neighborhood outreach program.</span></div>
+              <div class="frow"><span class="k2">Arc</span><span class="v2">Setup (0–6) · Confrontation (6–16) · Decision &amp; small victory (16–22)</span></div>
+            </div>
+            <div class="considered">
+              <div class="cons"><span class="chev">⌄</span><span class="obox"></span> Some ideas were considered 1–3…</div>
+              <div class="cons"><span class="chev">⌄</span><span class="obox"></span> Some ideas were considered 1–3…</div>
+              <div class="cons"><span class="chev">⌄</span><span class="obox"></span> Some ideas were considered 1–3…</div>
+              <div class="cstar">★</div>
+            </div>
+          </div>
+
+          <!-- TASK 3 expanded -->
+          <div class="tnode task todo">
+            <div class="trow"><span class="tsq todo"></span><span class="tn2">Task 3 : Make it happen</span><span class="chev">⌄</span></div>
+            <div class="tbody">
+              <p class="tprompt">Make it happen — turn the plan into action. Unlocks once Task 2 is done.</p>
+              <div class="accept"><b>Acceptance:</b> a scheduled shoot plan with dates &amp; a confirmed location — not just "looks done".</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="inputbar"><span class="plus">+</span><div class="field"><span class="ph">Ask anything</span><span class="mic">🎙</span></div></div>
+    </div>
+
+    <div class="tabbar"><div class="navpill"><div class="navtab"><span class="ic">⌂</span>Home</div><div class="navtab active"><span class="logo"><i></i><i></i><i></i></span>Projects</div><div class="navtab"><span class="ic">⚑</span>Follow</div><div class="navtab"><span class="ic">⊕</span>Create</div></div><div class="search-fab">⌕</div></div>
+  </div>
+
+  <div class="cap">
+    <b>Full expanded screen.</b><br><br>
+    Everything is open — Phase (+ siblings), Milestone, both Steps, all three Tasks, the filed Episode Brief, and "ideas considered".<br><br>
+    The frame is natural height (no internal scroll), so the whole thing exports in one shot.<br><br>
+    <div class="ctas">
+      <button class="cta" id="copyBtn">📋 Copy screen → paste in Figma</button>
+      <button class="cta ghost" id="dlBtn">⬇ Download PNG</button>
+    </div>
+    <div class="cta-note" id="ctaNote">Copies a 2× PNG to your clipboard — then just <b>Cmd+V</b> in Figma.</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  const shellEl = document.querySelector('.shell');
+  const note = document.getElementById('ctaNote');
+  function setNote(t){ note.innerHTML = t; }
+
+  async function render(){
+    return await html2canvas(shellEl, { backgroundColor: '#0b0b0d', scale: 2, useCORS: true, logging: false });
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    setNote('Rendering…');
+    try {
+      const canvas = await render();
+      canvas.toBlob(async (blob) => {
+        try {
+          await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+          setNote('✅ Copied! Switch to Figma and press <b>Cmd+V</b>.');
+        } catch (err) {
+          // clipboard blocked (often on file://) → fall back to download
+          downloadBlob(blob);
+          setNote('Clipboard blocked here — downloaded the PNG instead. Drag it into Figma.');
+        }
+      }, 'image/png');
+    } catch(e){ setNote('Render failed — try the Download button.'); }
+  });
+
+  document.getElementById('dlBtn').addEventListener('click', async () => {
+    setNote('Rendering…');
+    try {
+      const canvas = await render();
+      canvas.toBlob((blob) => { downloadBlob(blob); setNote('⬇ Downloaded — drag the PNG into Figma.'); }, 'image/png');
+    } catch(e){ setNote('Render failed.'); }
+  });
+
+  function downloadBlob(blob){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ganttsy-chat-window-expanded.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  }
+</script>
+</body>
+</html>

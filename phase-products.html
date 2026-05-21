@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganttsy — Phase Board · Phase Appropriate Products</title>
+<style>
+  :root{
+    --bg:#0E0E10; --bg-2:#0B0B0D; --panel:#141416; --surface:#1C1C1F; --surface-hi:#242428;
+    --border:#262629; --border-hi:#34343a;
+    --text:#ECECEE; --text-2:#C7C7CD; --text-muted:#8C8C94; --text-dim:#5d5d65; --text-mute:#7d7d85;
+    --orange:#FF9B1A; --orange-text:#FFB658; --orange-tint:rgba(255,155,26,.12); --orange-bd:rgba(255,155,26,.42);
+    --green:#2BD27E; --green-text:#52DDA1; --green-tint:rgba(43,210,126,.12); --green-bd:rgba(43,210,126,.4);
+    --yellow:#E8B53C;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;background:#070708;color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .app{width:1300px;max-width:96vw;margin:24px auto;background:var(--bg);border-radius:22px;overflow:hidden;display:flex;box-shadow:0 30px 80px rgba(0,0,0,.6);min-height:900px}
+
+  /* rail */
+  .rail{width:92px;background:var(--bg-2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:22px 0;gap:6px;flex:0 0 92px}
+  .rail .item{width:64px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0;border-radius:14px;color:var(--text-muted);font-size:11px;cursor:pointer}
+  .rail .item .ic{font-size:19px}
+  .rail .item.active{background:var(--orange-tint);color:var(--orange-text)}
+  .rail .item.active .logo{display:flex;flex-direction:column;gap:2.5px;align-items:center}
+  .rail .item.active .logo i{display:block;height:3px;border-radius:2px;background:var(--orange)}
+  .rail .item.active .logo i:nth-child(1){width:18px}.rail .item.active .logo i:nth-child(2){width:12px}.rail .item.active .logo i:nth-child(3){width:15px}
+  .rail .spacer{flex:1}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+  .topbar{padding:18px 28px 8px;flex:0 0 auto}
+  .crumb{font-size:13px;color:var(--text-muted);margin-bottom:10px}.crumb .now{color:var(--text-2)}
+  .titlerow{display:flex;align-items:center;gap:16px}
+  .titlerow .back{width:42px;height:42px;border-radius:50%;background:#1a1a1d;border:1px solid #2c2c31;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;cursor:pointer}
+  .titlerow h1{font-size:30px;font-weight:800;margin:0}
+  .titlerow .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .search{width:56px;height:56px;border-radius:50%;background:#141416;border:1px solid #242427;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;cursor:pointer}
+  .avatar-wrap{width:56px;height:56px;position:relative;display:flex;align-items:center;justify-content:center}
+  .avatar{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#d8b07a,#8a6638 70%);border:1.5px solid #0f0c0b}
+  .avatar-wrap::after{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 7deg,rgba(255,255,255,.5) 7deg 8.5deg,transparent 8.5deg 30deg,rgba(255,255,255,.5) 30deg 31.5deg,transparent 31.5deg 60deg,rgba(255,255,255,.5) 60deg 61.5deg,transparent 61.5deg 90deg,rgba(255,255,255,.5) 90deg 91.5deg,transparent 91.5deg 120deg,rgba(255,255,255,.5) 120deg 121.5deg,transparent 121.5deg 150deg,rgba(255,255,255,.5) 150deg 151.5deg,transparent 151.5deg 180deg,rgba(255,255,255,.5) 180deg 181.5deg,transparent 181.5deg 210deg,rgba(255,255,255,.5) 210deg 211.5deg,transparent 211.5deg 240deg,rgba(255,255,255,.5) 240deg 241.5deg,transparent 241.5deg 270deg,rgba(255,255,255,.5) 270deg 271.5deg,transparent 271.5deg 300deg,rgba(255,255,255,.5) 300deg 301.5deg,transparent 301.5deg 330deg,rgba(255,255,255,.5) 330deg 331.5deg,transparent 331.5deg 360deg);-webkit-mask:radial-gradient(circle,transparent 0 22px,#000 22px 27px,transparent 27px);mask:radial-gradient(circle,transparent 0 22px,#000 22px 27px,transparent 27px)}
+
+  .board{flex:1;margin:8px 22px 22px;border:1px solid var(--border);border-radius:16px;background:var(--bg-2);overflow:auto;position:relative}
+  .board::-webkit-scrollbar{width:8px}.board::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+
+  .btoolbar{display:flex;justify-content:flex-end;gap:10px;padding:16px 18px 0}
+  .btoolbar .today{padding:9px 18px;border:1px solid var(--orange-bd);color:var(--text);background:transparent;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer}
+  .btoolbar .zoom{display:flex;border:1px solid var(--border-hi);border-radius:9px;overflow:hidden}
+  .btoolbar .zoom button{width:38px;height:38px;background:var(--surface);border:0;color:var(--text);font-size:17px;cursor:pointer}
+  .btoolbar .zoom button:first-child{border-right:1px solid var(--border-hi)}
+
+  /* timeline rail */
+  .tl-title{display:flex;align-items:center;gap:8px;padding:14px 18px 6px;color:var(--orange-text);font-weight:600;font-size:13px;cursor:pointer}
+  .rail-bar{margin:0 18px;height:78px;border:1px solid var(--border-hi);border-radius:18px;position:relative;display:flex;align-items:center;overflow:hidden;background:linear-gradient(90deg,rgba(255,255,255,.015),transparent)}
+  .rail-seg{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;border-right:1px solid rgba(255,255,255,.04);position:relative;height:100%}
+  .rail-seg:last-child{border-right:0}
+  .rail-seg .dot{width:4px;height:4px;border-radius:50%;background:var(--green)}
+  .rail-seg.future .dot{background:var(--text-dim)}
+  .rail-seg.active .dot{background:var(--yellow)}
+  .rail-dia{position:absolute;right:-5px;top:50%;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;border:1.5px solid var(--text-muted);background:var(--bg-2);z-index:2}
+  .today-line{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--orange);z-index:3}
+  .today-line::before{content:'';position:absolute;top:-4px;left:-3px;width:8px;height:8px;border-radius:50%;background:var(--orange)}
+
+  .year-row{display:grid;grid-template-columns:1fr 1fr;padding:14px 18px 0;font-size:13px;font-weight:700}
+  .year-row span:last-child{text-align:left;padding-left:8px}
+  .month-row{display:grid;grid-template-columns:repeat(12,1fr);padding:8px 18px 0;font-size:12.5px;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:14px}
+  .month-row span{text-align:center}
+
+  .mnav{display:flex;align-items:center;gap:14px;padding:18px 24px 4px}
+  .mnav .arw{width:30px;height:30px;border-radius:8px;border:1px solid var(--orange-bd);color:var(--orange-text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .mnav .mm{font-size:17px;font-weight:700}
+  .line-title{padding:0 24px}.line-title .lt{font-size:15px;font-weight:700}.line-title .la{font-size:12px;color:var(--text-dim);margin-top:2px;cursor:pointer}
+
+  .tabs{display:flex;gap:26px;padding:18px 24px 0;border-bottom:1px solid var(--border);margin:14px 24px 0;padding-left:0}
+  .tab{padding-bottom:12px;font-size:14px;color:var(--text-muted);cursor:pointer;position:relative}
+  .tab.active{color:var(--orange-text);font-weight:700}
+  .tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--orange)}
+
+  .content{padding:22px 24px 30px}
+  .content h2{font-size:18px;font-weight:700;margin:0 0 16px}
+  .hero-img{width:100%;height:170px;border-radius:14px;background:linear-gradient(120deg,#c9b9a8,#9c8a78);position:relative;overflow:hidden;margin-bottom:18px}
+  .hero-img::after{content:'👣';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:60px;opacity:.85}
+  .sec-head{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px}
+  .sec-head .cv{color:var(--orange-text);font-size:13px}
+  .content p{color:var(--text-2);font-size:13.5px;line-height:1.65;margin:0 0 14px;max-width:780px}
+  .protip-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-top:6px}
+  .protip{max-width:420px}
+  .protip .pt{font-size:14px;font-weight:700;margin-bottom:6px}
+  .protip p{font-size:13px;color:var(--text-muted);margin:0}
+  .see-products{display:inline-flex;align-items:center;gap:10px;color:var(--orange-text);font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;padding-top:4px}
+  .see-products .box{width:30px;height:30px;border-radius:8px;background:var(--orange-tint);border:1px solid var(--orange-bd);display:flex;align-items:center;justify-content:center;font-size:15px}
+  .see-products:hover{text-decoration:underline}
+  .chat-now{display:inline-flex;align-items:center;gap:8px;margin-top:22px;padding:10px 16px;border:1px solid var(--border-hi);background:var(--surface);border-radius:10px;color:var(--text-2);font-size:13px;font-weight:600;cursor:pointer}
+
+  /* ===== sales window (overlay panel) ===== */
+  .sales-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40}
+  body.sales-open .sales-backdrop{display:block}
+  .salescol{display:none;position:fixed;top:24px;right:calc(50vw - 650px + 22px);bottom:24px;width:460px;max-width:42vw;z-index:50;border:1px solid var(--border-hi);border-radius:18px;background:#101013;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7)}
+  body.sales-open .salescol{display:flex;animation:slideIn .28s ease}
+  @keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+  .sales-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border);flex:0 0 auto}
+  .sales-head .st{font-size:15px;font-weight:700;flex:1}.sales-head .st small{color:var(--text-muted);font-weight:500}
+  .sales-head .sx{color:var(--text-muted);font-size:17px;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .sales-head .sx:hover{background:var(--surface)}
+  .sales-scroll{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:20px}
+  .sales-scroll::-webkit-scrollbar{width:8px}.sales-scroll::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+  .pcx-img{width:100%;height:160px;border-radius:13px;background:linear-gradient(135deg,#c9b9a8,#7e6f5f);margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:46px}
+  .pcx-title{font-size:16px;font-weight:700;margin-bottom:8px;line-height:1.25}
+  .pcx-rating{display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:14px}
+  .pcx-rating .stars{color:var(--orange);letter-spacing:1px}.pcx-rating .rev{color:var(--text-muted);font-size:13px}
+  .seller{border:1px solid var(--border-hi);border-radius:14px;padding:14px}
+  .seller-top{display:flex;align-items:flex-start;gap:11px;margin-bottom:11px}
+  .seller-logo{width:36px;height:36px;border-radius:9px;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 36px;font-size:16px}
+  .seller-name{color:var(--orange-text);font-weight:700;font-size:13.5px;flex:1;padding-top:3px}
+  .seller-price{text-align:right}.seller-price .big{font-size:16px;font-weight:800}.seller-price .usd{font-size:11px;color:var(--text-muted);display:block;margin-top:2px}
+  .seller-title{font-size:13px;color:var(--text-2);margin-bottom:7px}
+  .seller-stock{font-size:12.5px;color:var(--green-text);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+  .seller-stock .gd{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .seller-ship{font-size:11.5px;color:var(--text-muted);line-height:1.55}
+  .seller-actions{display:flex;gap:9px;margin-top:12px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 15px;border-radius:11px;border:1px solid var(--border-hi);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+  .btn.primary{background:var(--orange);border-color:var(--orange);color:#1A1206;font-weight:700}
+  .toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(10px);background:#27272b;border:1px solid var(--border-hi);color:var(--text);font-size:13px;font-weight:600;padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;z-index:80}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="item"><span class="ic">⌂</span>Home</div>
+    <div class="item active"><span class="logo"><i></i><i></i><i></i></span>Project</div>
+    <div class="item"><span class="ic">⚑</span>Follow</div>
+    <div class="item"><span class="ic">⊕</span>Create</div>
+    <div class="spacer"></div>
+    <div class="item"><span class="ic">⚙</span>Settings</div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">Projects&nbsp; /&nbsp; <span class="now">Project Board</span></div>
+      <div class="titlerow"><div class="back">‹</div><h1>Project Board</h1>
+        <div class="right"><div class="search">⌕</div><div class="avatar-wrap"><div class="avatar"></div></div></div>
+      </div>
+    </header>
+
+    <section class="board">
+      <div class="btoolbar"><button class="today">Today</button><div class="zoom"><button>+</button><button>−</button></div></div>
+
+      <div class="tl-title">▴ First year of my child</div>
+      <div class="rail-bar" id="railBar"></div>
+
+      <div class="year-row"><span>2026</span><span>2027</span></div>
+      <div class="month-row"><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sept</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span></div>
+
+      <div class="mnav"><span class="arw">←</span><span class="mm">May, 2036</span><span class="arw">→</span></div>
+      <div class="line-title"><div class="lt">First year of my child</div><div class="la">Add a line here</div></div>
+
+      <div class="tabs">
+        <div class="tab active">What to Expect</div>
+        <div class="tab">Reality Check</div>
+        <div class="tab">Quiet Truths</div>
+        <div class="tab">Core Objective</div>
+        <div class="tab">Milestones</div>
+        <div class="tab">Survival Guide</div>
+      </div>
+
+      <div class="content">
+        <h2>What to Expect</h2>
+        <div class="hero-img"></div>
+        <div class="sec-head"><span class="cv">▴</span> Health · Transition forward a toddler diet</div>
+        <p>By now, many babies are eating a wide variety of solids alongside milk, with increasing participation in family meals. Appetite may fluctuate, especially with growth changes or teething. The focus shifts toward balanced nutrition, exposure, and self-feeding skills rather than intake perfection (American Academy of Pediatrics, World Health Organization).</p>
+        <p>By month 12, feeding shifts from pure nutrition delivery to skill-building and habit formation. Your child is learning how to eat — textures, flavors, timing, and social cues. Appetite will vary widely day-to-day due to growth, activity, and teething, which is normal. Milk still plays a role, but solids now supply broader nutrient exposure and autonomy. Eating alongside family becomes important, as imitation drives learning. The goal is not perfect intake — it's developing a positive, low-pressure relationship with food that supports long-term nutrition and behavior.</p>
+        <div class="protip-row">
+          <div class="protip">
+            <div class="pt">Pro Tip</div>
+            <p>Serve the same core foods repeatedly even if rejected. It can take 10–15 exposures before acceptance. Consistency beats variety overload.</p>
+          </div>
+          <div class="see-products" id="seeProducts"><span class="box">▣</span> See Phase Appropriate Products</div>
+        </div>
+        <button class="chat-now">💬 Chat Now</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- sales window -->
+<div class="sales-backdrop" id="salesClose"></div>
+<section class="salescol">
+  <div class="sales-head"><span class="st">Phase appropriate products <small>· toddler diet</small></span><span class="sx" id="salesCloseBtn">✕</span></div>
+  <div class="sales-scroll" id="salesScroll"></div>
+</section>
+<div class="toast"></div>
+
+<script>
+  // timeline rail: 12 month segments, dots + diamonds, today line
+  const rail = document.getElementById('railBar');
+  let html='';
+  for(let i=0;i<12;i++){
+    const state = i<2 ? 'done' : (i===2 ? 'active' : 'future');
+    html += `<div class="rail-seg ${state}"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>${i<11?'<span class="rail-dia"></span>':''}</div>`;
+  }
+  rail.innerHTML = html + '<div class="today-line" style="left:31%;"></div>';
+
+  // products (phase appropriate — toddler feeding)
+  const PRODUCTS=[
+    {img:'🍽',title:'ezpz Mini Feeding Set — Lime Green',stars:'★★★★★',rating:'4.8',reviews:'4.3k',logo:'b',seller:'bybebé Global',price:'165,08 CAD',usd:'≈ $38.90',sub:'ezpz Mini Feeding Set · Lime Green',stock:'In stock online',ship:'Free delivery on orders 2.546 PLN+ · Delivery 49.44 · 14-day returns'},
+    {img:'🥤',title:'Munchkin Miracle 360° Sippy Cup (2-pack)',stars:'★★★★☆',rating:'4.7',reviews:'12k',logo:'M',seller:'Munchkin',price:'18,99 CAD',usd:'≈ $13.90',sub:'Spill-proof · 10oz · BPA-free',stock:'In stock online',ship:'Free delivery on orders 35 CAD+ · 30-day returns'},
+    {img:'🪑',title:'Stokke Tripp Trapp High Chair',stars:'★★★★★',rating:'4.9',reviews:'9.1k',logo:'S',seller:'Stokke',price:'389,00 CAD',usd:'≈ $284',sub:'Adjustable · grows with child',stock:'Low stock — 3 left',ship:'Free delivery · Ships in 3–5 days · 60-day returns'},
+  ];
+  document.getElementById('salesScroll').innerHTML = PRODUCTS.map(p=>`
+    <div class="pcx">
+      <div class="pcx-img">${p.img}</div>
+      <div class="pcx-title">${p.title}</div>
+      <div class="pcx-rating">${p.rating} <span class="stars">${p.stars}</span> <span class="rev">${p.reviews} user reviews</span></div>
+      <div class="seller">
+        <div class="seller-top"><span class="seller-logo">${p.logo}</span><span class="seller-name">${p.seller}</span><span class="seller-price"><span class="big">${p.price}</span><span class="usd">${p.usd}</span></span></div>
+        <div class="seller-title">${p.sub}</div>
+        <div class="seller-stock"><span class="gd"></span>${p.stock}</div>
+        <div class="seller-ship">${p.ship}</div>
+        <div class="seller-actions"><button class="btn primary">Add to cart</button><button class="btn">View</button></div>
+      </div>
+    </div>`).join('');
+
+  function toast(t){const el=document.querySelector('.toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1600);}
+  const open=()=>document.body.classList.add('sales-open');
+  const close=()=>document.body.classList.remove('sales-open');
+  document.getElementById('seeProducts').addEventListener('click',open);
+  document.querySelector('.chat-now').addEventListener('click',open);
+  document.getElementById('salesClose').addEventListener('click',close);
+  document.getElementById('salesCloseBtn').addEventListener('click',close);
+  document.querySelectorAll('.seller-actions .btn').forEach(b=>b.addEventListener('click',()=>toast(b.textContent.trim())));
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');}));
+  document.querySelectorAll('.rail .item').forEach(it=>it.addEventListener('click',()=>{document.querySelectorAll('.rail .item').forEach(x=>x.classList.remove('active'));it.classList.add('active');}));
+</script>
+</body>
+</html>
