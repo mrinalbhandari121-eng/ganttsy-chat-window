@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganttsy · Onboarding — Option A (Voice stays as chat bubble)</title>
+<style>
+  :root{
+    --bg:#0E0E10;--bg-2:#0B0B0D;--panel:#141416;--surface:#1C1C1F;--surface-hi:#242428;
+    --border:#262629;--border-hi:#34343a;
+    --text:#ECECEE;--text-2:#C7C7CD;--text-muted:#8C8C94;--text-dim:#5d5d65;--text-mute:#7d7d85;
+    --orange:#FF9B1A;--orange-text:#FFB658;--orange-tint:rgba(255,155,26,.12);--orange-bd:rgba(255,155,26,.42);
+    --green:#2BD27E;--green-text:#52DDA1;--green-tint:rgba(43,210,126,.12);--green-bd:rgba(43,210,126,.4);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;background:#070708;color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .app{width:min(1380px,96vw);height:min(960px,92vh);margin:24px auto;background:var(--bg);border-radius:22px;overflow:hidden;display:flex;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .variant-tag{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#27272b;border:1px solid var(--border-hi);color:var(--orange-text);font-size:11.5px;font-weight:700;padding:6px 16px;border-radius:999px;z-index:90;letter-spacing:.06em}
+  .variant-tag a{color:var(--text-muted);text-decoration:none;margin-left:12px;font-weight:600}
+
+  /* RAIL */
+  .rail{width:84px;background:var(--bg-2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:22px 0;gap:6px;flex:0 0 84px}
+  .rail .item{width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0;border-radius:12px;color:var(--text-muted);font-size:10.5px;cursor:pointer}
+  .rail .item .ic{font-size:17px}
+  .rail .item.active{background:var(--orange-tint);color:var(--orange-text)}
+  .rail .item.active .logo{display:flex;flex-direction:column;gap:2.5px;align-items:center}
+  .rail .item.active .logo i{display:block;height:3px;border-radius:2px;background:var(--orange)}
+  .rail .item.active .logo i:nth-child(1){width:17px}.rail .item.active .logo i:nth-child(2){width:11px}.rail .item.active .logo i:nth-child(3){width:14px}
+  .rail .spacer{flex:1}
+
+  /* MAIN */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{padding:16px 24px 6px;flex:0 0 auto}
+  .crumb{font-size:12.5px;color:var(--text-muted);margin-bottom:8px}.crumb .now{color:var(--text-2)}
+  .titlerow{display:flex;align-items:center;gap:14px}
+  .titlerow .back{width:38px;height:38px;border-radius:50%;background:#1a1a1d;border:1px solid #2c2c31;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;cursor:pointer}
+  .titlerow h1{font-size:24px;font-weight:800;margin:0}
+  .titlerow .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .stepchip{display:flex;align-items:center;gap:9px;padding:6px 13px;border-radius:999px;background:var(--orange-tint);border:1px solid var(--orange-bd);font-size:12px;color:var(--orange-text);font-weight:700}
+  .stepchip .dot{width:6px;height:6px;border-radius:50%;background:var(--orange)}
+
+  .content{flex:1;display:flex;gap:18px;padding:10px 22px 22px;min-height:0}
+
+  /* === GANTT BOARD (existing app.html style, simplified) === */
+  .board{flex:0 0 380px;border:1px solid var(--border);border-radius:14px;background:var(--bg-2);overflow:hidden;display:flex;flex-direction:column}
+  .board-h{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .board-h .bb{padding:5px 10px;border:1px solid var(--orange-bd);background:var(--orange-tint);color:var(--orange-text);border-radius:8px;font-size:11px;font-weight:700;cursor:pointer}
+  .board-h .ms{margin-left:auto;display:flex;gap:5px;color:var(--text-muted);font-size:14px}
+  .board-h .ms .btn{width:24px;height:24px;border-radius:6px;background:var(--surface-hi);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .board-c{flex:1;overflow-y:auto;padding:14px 16px 18px}
+  .board-c::-webkit-scrollbar{width:8px}.board-c::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+
+  .phase-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;gap:10px}
+  .phase-card .thumb{width:50px;height:50px;border-radius:8px;background:linear-gradient(135deg,#2a5e6a,#1a4f5a);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 50px}
+  .phase-card .body{flex:1;min-width:0}
+  .phase-card h4{font-size:12.5px;font-weight:700;margin:0 0 4px;line-height:1.3}
+  .phase-card .vm{font-size:10.5px;color:var(--orange-text);font-weight:600;cursor:pointer}
+  .phase-card .ms{font-size:10px;color:var(--text-mute);margin-top:3px}
+
+  .tl-head{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px;font-size:9.5px;color:var(--text-mute);text-align:center;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .tl-month{font-size:10.5px;color:var(--text-2);font-weight:700;margin-bottom:6px}
+  .gantt-row{margin-bottom:14px}
+  .gantt-row .lbl{font-size:11.5px;color:var(--text-2);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+  .gantt-row .lbl .pct{margin-left:auto;color:var(--text-mute);font-weight:600;font-size:10.5px}
+  .gantt-row .lbl.dim{color:var(--text-mute)}
+  .gantt-grid{position:relative;height:18px;background:var(--surface);border-radius:5px;overflow:hidden}
+  .gantt-grid::before,.gantt-grid::after{content:'';position:absolute;top:0;bottom:0;width:1px;background:var(--border-hi)}
+  .gantt-grid::before{left:25%}.gantt-grid::after{left:50%}
+  .gantt-grid .vd2{position:absolute;left:75%;top:0;bottom:0;width:1px;background:var(--border-hi)}
+  .gantt-bar{position:absolute;top:2px;bottom:2px;background:var(--green);border-radius:3px;display:flex;align-items:center;padding:0 6px;font-size:9.5px;font-weight:700;color:#0c2718;white-space:nowrap;overflow:hidden}
+  .gantt-bar.dim{background:rgba(43,210,126,.18);border:1px dashed rgba(43,210,126,.45);color:var(--green-text)}
+  .gantt-bar.pending{background:transparent;border:1px dashed var(--border-hi);color:var(--text-mute)}
+  .substep{margin-left:14px;margin-top:8px}
+  .substep .lbl{font-size:11px;font-weight:600;color:var(--text-mute)}
+  .substep .gantt-grid{height:13px}
+  .substep .gantt-bar{font-size:9px}
+
+  /* === CHAT === */
+  .chatcol{flex:1;border:1px solid var(--border-hi);border-radius:14px;background:#0A0A0C;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+  .cbreadcrumb{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;font-size:12px;flex:0 0 auto}
+  .cbreadcrumb .cseg{color:var(--text-2)}
+  .cbreadcrumb .cseg.now{color:var(--orange-text);font-weight:700}
+  .cbreadcrumb .csep{color:var(--text-dim)}
+  .cbreadcrumb .progress{margin-left:auto;font-size:11px;color:var(--text-muted)}
+  .cv{flex:1;overflow-y:auto;padding:22px 24px 16px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth}
+  .cv::-webkit-scrollbar{width:8px}.cv::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+
+  .minput{border-top:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:10px;flex:0 0 auto;background:var(--bg-2)}
+  .minput .ico{width:34px;height:34px;border-radius:50%;background:var(--surface-hi);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px}
+  .minput input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:13.5px;font-family:inherit}
+
+  /* ===== OPTION A: voice = chat bubble that STAYS ===== */
+  .block{display:none;opacity:0;transform:translateY(8px);transition:opacity .35s ease,transform .35s ease}
+  .block.show{display:block;opacity:1;transform:none}
+
+  /* voice as a chat bubble (agent G + bubble) */
+  .vbubble{display:flex;gap:11px;align-items:flex-start;max-width:760px}
+  .vbubble .av{width:30px;height:30px;border-radius:50%;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:0 0 30px}
+  .vbubble .bub{flex:1;background:var(--surface);border:1px solid var(--border-hi);border-radius:14px;border-top-left-radius:5px;padding:13px 16px;font-size:13.5px;line-height:1.6;color:var(--text-2);position:relative}
+  .vbubble .vmeta{display:flex;align-items:center;gap:9px;margin-bottom:8px;font-size:10.5px;color:var(--orange-text);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .vbubble .vmeta .vplay{width:22px;height:22px;border-radius:50%;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);display:flex;align-items:center;justify-content:center;font-size:9px;cursor:pointer}
+  .vbubble.playing .vmeta .vplay{background:var(--orange);color:#1A1206}
+  .vbubble .wave{display:flex;gap:2px;align-items:center;height:12px;opacity:0;transition:opacity .15s}
+  .vbubble.playing .wave{opacity:1}
+  .vbubble .wave i{display:block;width:2px;height:5px;background:var(--orange);border-radius:1px;opacity:.5}
+  .vbubble.playing .wave i{animation:wv .9s ease-in-out infinite}
+  .vbubble.playing .wave i:nth-child(1){animation-delay:0s}
+  .vbubble.playing .wave i:nth-child(2){animation-delay:.1s}
+  .vbubble.playing .wave i:nth-child(3){animation-delay:.2s}
+  .vbubble.playing .wave i:nth-child(4){animation-delay:.3s}
+  @keyframes wv{0%,100%{height:5px;opacity:.45}50%{height:12px;opacity:1}}
+  .vbubble .vts{margin-left:auto;font-size:10.5px;color:var(--text-mute);font-weight:500;letter-spacing:0;text-transform:none}
+  .vbubble .vskip{margin-left:6px;font-size:10.5px;color:var(--text-muted);background:transparent;border:1px solid var(--border-hi);border-radius:999px;padding:2px 9px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:0;text-transform:none}
+  .vbubble.done .vskip{display:none}
+  .vbubble.done .vmeta .vplay{background:var(--green-tint);border-color:var(--green-bd);color:var(--green-text)}
+  .vbubble.done .vmeta{color:var(--text-muted)}
+  .vbubble .vbody p{margin:0 0 8px}.vbubble .vbody p:last-child{margin-bottom:0}
+  .vword{color:var(--text-dim);transition:color .25s ease,text-shadow .25s ease}
+  .vword.spoken{color:var(--text-2)}
+  .vword.now{color:var(--orange-text);text-shadow:0 0 10px rgba(255,155,26,.35)}
+  .vbubble.done .vword{color:var(--text-2)}
+  .vbubble .vbody b,.vbubble.done .vbody b{color:var(--text);font-weight:700}
+
+  /* Question card (separate bubble below voice) */
+  .qbubble{display:flex;gap:11px;align-items:flex-start;max-width:760px;margin-top:6px;display:none;opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
+  .qbubble.show{display:flex;opacity:1;transform:none}
+  .qbubble .av{width:30px;height:30px;border-radius:50%;background:var(--surface-hi);border:1px solid var(--border-hi);color:var(--text-mute);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:0 0 30px}
+  .qbubble.locked .av{background:var(--green);border-color:var(--green);color:#0c2718}
+  .qbubble.locked .av::before{content:"✓";font-size:14px}
+  .qbubble.locked .av .raw{display:none}
+  .qcard{flex:1;background:var(--surface);border:1px solid var(--border-hi);border-radius:14px;border-top-left-radius:5px;padding:14px 16px;transition:background .25s,border-color .25s}
+  .qbubble.locked .qcard{background:rgba(43,210,126,.04);border-color:rgba(43,210,126,.3)}
+  .qbubble.locked .qcard .qbody{opacity:.55;pointer-events:none}
+  .qbubble.locked .qconfirm{display:none}
+  .qhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .qhead .tasknum{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--orange-text);text-transform:uppercase}
+  .qhead .qkind{font-family:ui-monospace,Menlo,monospace;color:var(--text-mute);font-weight:600;font-size:10.5px;letter-spacing:.04em}
+  .qhead .answer-badge{margin-left:auto;display:none;font-size:11.5px;font-weight:700;color:var(--green-text);padding:5px 11px;background:var(--green-tint);border:1px solid var(--green-bd);border-radius:999px}
+  .qbubble.locked .answer-badge{display:block}
+  .qbubble.locked .qhead .tasknum{color:var(--green-text)}
+  .edit-link{display:none;font-size:11.5px;color:var(--orange-text);cursor:pointer;font-weight:600;margin-left:8px}
+  .qbubble.locked .edit-link{display:inline}
+  .qttl{font-size:15px;font-weight:700;color:var(--text);margin:6px 0 4px;line-height:1.4}
+  .qhint{font-size:11.5px;color:var(--text-mute);font-style:italic;margin:0 0 12px;line-height:1.55}
+  .qfoot{margin-top:14px;display:flex;align-items:center;gap:10px}
+  .qconfirm{padding:8px 16px;border-radius:10px;border:1px solid var(--orange);background:var(--orange);color:#1A1206;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em}
+  .qconfirm:disabled{opacity:.45;cursor:not-allowed}
+  .qfoot .live-ans{font-size:12px;color:var(--text-mute)}
+
+  /* time picker */
+  .tp{display:flex;gap:10px;align-items:center;background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:12px;padding:14px 16px}
+  .tp .col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto}
+  .tp .col .stp{width:24px;height:20px;border-radius:6px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px}
+  .tp .col .stp:hover{color:var(--text);border-color:var(--text-muted)}
+  .tp .col .v{font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--text);min-width:48px;text-align:center;line-height:1}
+  .tp .col .m{font-size:10.5px;color:var(--text-mute);letter-spacing:.05em;text-transform:uppercase}
+  .tp .sep{font-size:28px;color:var(--text-dim);font-weight:300}
+  .ampm{display:flex;gap:4px;margin-left:auto}
+  .ampm button{padding:7px 14px;border-radius:8px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .ampm button.on{background:var(--orange);border-color:var(--orange);color:#1A1206}
+
+  /* chips */
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{padding:8px 13px;border-radius:999px;border:1px solid var(--border-hi);background:var(--surface-hi);color:var(--text-2);font-size:12.5px;cursor:pointer;font-family:inherit;transition:.12s}
+  .chip:hover{border-color:var(--text-muted)}
+  .chip.on{background:var(--orange);border-color:var(--orange);color:#1A1206;font-weight:700}
+
+  /* acknowledge list */
+  .alist{display:flex;flex-direction:column;gap:7px}
+  .al-item{border:1px solid var(--border-hi);background:var(--surface-hi);border-radius:11px;overflow:hidden}
+  .al-head{display:flex;align-items:center;gap:11px;padding:10px 13px;cursor:pointer}
+  .al-head .ck{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--text-mute);flex:0 0 18px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0c2718;font-weight:900}
+  .al-item.ack .al-head .ck{background:var(--green);border-color:var(--green)}
+  .al-item.ack .al-head .ck::before{content:"✓"}
+  .al-head .lbl{flex:1;font-size:13px;font-weight:600}
+  .al-head .ch{color:var(--text-dim);font-size:12px;transition:transform .2s}
+  .al-item.open .al-head .ch{transform:rotate(180deg)}
+  .al-body{display:none;padding:0 13px 12px 42px;font-size:12.5px;color:var(--text-muted);line-height:1.55}
+  .al-item.open .al-body{display:block}
+  .al-count{font-size:11.5px;color:var(--text-mute);margin-top:9px}
+  .al-count b{color:var(--green-text);font-weight:700}
+
+  /* date picker */
+  .cal{background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:13px;padding:14px;max-width:340px}
+  .cal-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:12px}
+  .cal-head .arr{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--orange-text);cursor:pointer;font-size:14px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .dow{font-size:9.5px;color:var(--text-mute);text-align:center;padding:4px 0;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  .day{font-size:11.5px;text-align:center;padding:6px 0;border-radius:7px;color:var(--text-2);cursor:pointer}
+  .day.mute{color:var(--text-mute);opacity:.5;cursor:default}
+  .day:hover:not(.mute){background:var(--surface)}
+  .day.sel{background:var(--green);color:#0c2718;font-weight:700}
+
+  /* scaled single_choice */
+  .scaled{display:flex;flex-direction:column;gap:8px}
+  .scaled .row{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border:1px solid var(--border-hi);background:var(--surface-hi);border-radius:11px;cursor:pointer;transition:.12s}
+  .scaled .row:hover{border-color:var(--text-muted)}
+  .scaled .row.sel{border-color:var(--orange);background:var(--orange-tint)}
+  .scaled .row .rad{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--text-mute);flex:0 0 18px;margin-top:1px}
+  .scaled .row.sel .rad{border-color:var(--orange);box-shadow:inset 0 0 0 4px var(--orange)}
+  .scaled .row .txt .t{font-size:13.5px;font-weight:700;color:var(--text)}
+  .scaled .row .txt .d{font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.5}
+
+  /* slider */
+  .slider{background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:12px;padding:16px}
+  .scope{display:flex;gap:6px;margin-bottom:12px}
+  .scope button{padding:6px 13px;border-radius:8px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .scope button.on{background:var(--orange);border-color:var(--orange);color:#1A1206}
+  .slider-val{display:inline-flex;padding:5px 14px;border-radius:999px;background:var(--orange-tint);color:var(--orange-text);font-weight:700;font-size:13px;margin-bottom:14px}
+  .srange{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:linear-gradient(90deg,var(--orange) 0%,var(--orange) var(--p,20%),var(--surface) var(--p,20%),var(--surface) 100%);outline:none}
+  .srange::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.5),0 0 0 4px rgba(255,155,26,.25)}
+  .slider-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--text-mute);margin-top:10px}
+
+  /* begin gate */
+  .begin-pad{padding:30px 0 18px;text-align:center}
+  .begin-pad .ttl{font-size:18px;font-weight:800;margin-bottom:6px}
+  .begin-pad .sub{font-size:12.5px;color:var(--text-muted);margin-bottom:18px}
+  .begin-btn{display:inline-flex;align-items:center;gap:9px;padding:11px 22px;border-radius:999px;background:var(--orange);border:0;color:#1A1206;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 8px 22px rgba(255,155,26,.25)}
+  .begin-btn .pl{width:18px;height:18px;border-radius:50%;background:#1A1206;color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:8px}
+
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(10px);background:#27272b;border:1px solid var(--border-hi);color:var(--text);font-size:13px;font-weight:600;padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;z-index:80}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="variant-tag">OPTION A · Voice stays as chat bubble <a href="onboarding-c.html">→ try Option C</a></div>
+<div class="app">
+  <aside class="rail">
+    <div class="item"><span class="ic">⌂</span>Home</div>
+    <div class="item active"><span class="logo"><i></i><i></i><i></i></span>Project</div>
+    <div class="item"><span class="ic">⚑</span>Follow</div>
+    <div class="item"><span class="ic">⊕</span>Create</div>
+    <div class="spacer"></div>
+    <div class="item"><span class="ic">⚙</span>Settings</div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">Projects&nbsp;/&nbsp; <span class="now">Starting a Vegetable Garden</span> &nbsp;/&nbsp; <span class="now">Onboarding</span></div>
+      <div class="titlerow">
+        <div class="back">‹</div>
+        <h1>Starting a Vegetable Garden</h1>
+        <div class="right"><div class="stepchip"><span class="dot"></span>Phase 1 · Milestone 1 · Step 1</div></div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- LEFT: regular Gantt board (placeholder matching existing app.html style) -->
+      <aside class="board">
+        <div class="board-h">
+          <span class="bb">Back to full Gantt chart</span>
+          <span class="ms"><span class="btn">+</span><span class="btn">−</span></span>
+        </div>
+        <div class="board-c">
+          <div class="phase-card">
+            <div class="thumb">🌱</div>
+            <div class="body"><h4>Starting a Vegetable Garden</h4><span class="vm">View More</span><div class="ms">Medium · 1 of 4 phases</div></div>
+          </div>
+          <div class="tl-month">May, 2026</div>
+          <div class="tl-head"><span>Week 1</span><span>Week 2</span><span>Week 3</span><span>Week 4</span></div>
+
+          <div class="gantt-row">
+            <div class="lbl">Phase 1 · Project Plan <span class="pct">0%</span></div>
+            <div class="gantt-grid"><div class="vd2"></div><div class="gantt-bar dim" style="left:0;width:18%">Setup</div></div>
+            <div class="substep">
+              <div class="lbl">Step 1 · Project Setup</div>
+              <div class="gantt-grid"><div class="vd2"></div><div class="gantt-bar dim" style="left:0;width:14%">In progress</div></div>
+            </div>
+            <div class="substep">
+              <div class="lbl dim">Step 2 · Requirements Gathering</div>
+              <div class="gantt-grid"><div class="vd2"></div><div class="gantt-bar pending" style="left:14%;width:12%">Queued</div></div>
+            </div>
+            <div class="substep">
+              <div class="lbl dim">Step 3 · Resource Assessment</div>
+              <div class="gantt-grid"><div class="vd2"></div><div class="gantt-bar pending" style="left:26%;width:14%">Queued</div></div>
+            </div>
+          </div>
+
+          <div class="gantt-row">
+            <div class="lbl dim">Phase 2 · Build &amp; Plant</div>
+            <div class="gantt-grid"><div class="vd2"></div><div class="gantt-bar pending" style="left:35%;width:35%">Not started</div></div>
+          </div>
+          <div class="gantt-row">
+            <div class="lbl dim">Phase 3 · Maintain &amp; Harvest</div>
+            <div class="gantt-grid"><div class="vd2"></div><div class="gantt-bar pending" style="left:65%;width:30%">Not started</div></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT: chat -->
+      <section class="chatcol">
+        <div class="cbreadcrumb">
+          <span class="cseg">Phase 1</span><span class="csep">›</span>
+          <span class="cseg">Milestone 1</span><span class="csep">›</span>
+          <span class="cseg now">Step 1: Project Setup</span>
+          <span class="progress" id="cbProg">Task 0 of 6</span>
+        </div>
+
+        <div class="cv" id="cv">
+
+          <!-- BEGIN gate -->
+          <div class="block show" id="b-begin">
+            <div class="begin-pad">
+              <div class="ttl">Welcome to Ganttsy.</div>
+              <div class="sub">I'll voice-guide you through setting up your first project — ~3 min.</div>
+              <button class="begin-btn" id="beginBtn"><span class="pl">▶</span>Begin onboarding</button>
+            </div>
+          </div>
+
+          <!-- WELCOME (voice only) -->
+          <div class="block" id="b-welcome">
+            <div class="vbubble">
+              <div class="av">G</div>
+              <div class="bub">
+                <div class="vmeta"><span class="vplay">▶</span>Voice · Welcome <span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:03pm</span><button class="vskip">Skip ▸</button></div>
+                <div class="vbody"><p>Welcome to your very first project, "Starting a Vegetable Garden".</p><p>Projects don't typically succeed with just grit or discipline. They require strategy, planning and vision — and once those are established, things start coming to life.</p><p>Ok, so let's establish a few big ones up front…</p></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 1 -->
+          <div class="block" id="b-t1">
+            <div class="vbubble">
+              <div class="av">G</div>
+              <div class="bub">
+                <div class="vmeta"><span class="vplay">▶</span>Voice · Task 1 <span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:03pm</span><button class="vskip">Skip ▸</button></div>
+                <div class="vbody"><p>Once a day I'll be in touch about all sorts of things — daily check-ins build momentum, focus, and smooth tomorrow's tasks.</p><p>Pick the time that works best for you.</p></div>
+              </div>
+            </div>
+            <div class="qbubble" data-task="t1">
+              <div class="av"><span class="raw">1</span></div>
+              <div class="qcard">
+                <div class="qhead"><span class="tasknum">Task 1 · Daily Check-ins</span><span class="qkind">time_picker</span><span class="answer-badge" id="ans-t1"></span><span class="edit-link" data-edit="t1">Edit</span></div>
+                <h3 class="qttl">When should I check in each day?</h3>
+                <div class="qbody">
+                  <div class="tp">
+                    <div class="col"><button class="stp" data-tp="h+">▲</button><div class="v" id="hr">2</div><button class="stp" data-tp="h-">▼</button><div class="m">hour</div></div>
+                    <div class="sep">:</div>
+                    <div class="col"><button class="stp" data-tp="m+">▲</button><div class="v" id="mn">03</div><button class="stp" data-tp="m-">▼</button><div class="m">min</div></div>
+                    <div class="ampm" data-ampm><button>AM</button><button class="on">PM</button></div>
+                  </div>
+                </div>
+                <div class="qfoot"><button class="qconfirm" data-confirm="t1">Confirm time</button><span class="live-ans" id="live-t1">2:03 PM</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 2 -->
+          <div class="block" id="b-t2">
+            <div class="vbubble">
+              <div class="av">G</div>
+              <div class="bub">
+                <div class="vmeta"><span class="vplay">▶</span>Voice · Task 2 <span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:04pm</span><button class="vskip">Skip ▸</button></div>
+                <div class="vbody"><p>Now — the all-important <b>why</b>. Having a vague idea is one of the top reasons people quit.</p><p>Pick every reason you're doing this — even the ones that are only partially true.</p></div>
+              </div>
+            </div>
+            <div class="qbubble" data-task="t2">
+              <div class="av"><span class="raw">2</span></div>
+              <div class="qcard">
+                <div class="qhead"><span class="tasknum">Task 2 · The "WHY"</span><span class="qkind">multi_select</span><span class="answer-badge" id="ans-t2"></span><span class="edit-link" data-edit="t2">Edit</span></div>
+                <h3 class="qttl">Why are you doing this project?</h3>
+                <p class="qhint">Pick as many as apply.</p>
+                <div class="qbody">
+                  <div class="chips" data-multi="t2">
+                    <button class="chip">Grow my own food</button><button class="chip">Spend more time outdoors</button><button class="chip">Save money on groceries</button><button class="chip">Teach my kids</button><button class="chip">A relaxing hobby</button><button class="chip">Eat healthier</button><button class="chip">Reduce waste</button><button class="chip">Pollinator-friendly garden</button><button class="chip">Curb appeal</button><button class="chip">Self-sufficiency</button><button class="chip">Something else</button>
+                  </div>
+                </div>
+                <div class="qfoot"><button class="qconfirm" data-confirm="t2" disabled>Confirm reasons</button><span class="live-ans" id="live-t2">Pick at least one</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 3 -->
+          <div class="block" id="b-t3">
+            <div class="vbubble">
+              <div class="av">G</div>
+              <div class="bub">
+                <div class="vmeta"><span class="vplay">▶</span>Voice · Task 3 <span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:04pm</span><button class="vskip">Skip ▸</button></div>
+                <div class="vbody"><p>To succeed, you need to understand what stands in the way. Tap each reason to acknowledge — we'll be on guard for all of them.</p></div>
+              </div>
+            </div>
+            <div class="qbubble" data-task="t3">
+              <div class="av"><span class="raw">3</span></div>
+              <div class="qcard">
+                <div class="qhead"><span class="tasknum">Task 3 · Why People Quit</span><span class="qkind">acknowledge_list</span><span class="answer-badge" id="ans-t3"></span><span class="edit-link" data-edit="t3">Edit</span></div>
+                <h3 class="qttl">Acknowledge each obstacle</h3>
+                <div class="qbody">
+                  <div class="alist" data-alist="t3">
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Lack of clear goals</span><span class="ch">⌄</span></div><div class="al-body">Vague start, no finish line. Drift wins.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Poor planning</span><span class="ch">⌄</span></div><div class="al-body">Underestimated time/money/effort — project stalls.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Loss of motivation</span><span class="ch">⌄</span></div><div class="al-body">Excitement fades. Daily check-ins counter this.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Competing priorities</span><span class="ch">⌄</span></div><div class="al-body">Life takes over. Energy budget keeps it sustainable.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Resource constraints</span><span class="ch">⌄</span></div><div class="al-body">We inventory this in Step 3.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Skill gaps</span><span class="ch">⌄</span></div><div class="al-body">We'll surface these and find help.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Fear of failure</span><span class="ch">⌄</span></div><div class="al-body">Small wins reframe the arc.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Perfectionism</span><span class="ch">⌄</span></div><div class="al-body">"Good enough" ships.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Weak accountability</span><span class="ch">⌄</span></div><div class="al-body">We set deadlines next.</div></div>
+                    <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Scope creep</span><span class="ch">⌄</span></div><div class="al-body">We define and protect scope.</div></div>
+                  </div>
+                  <div class="al-count"><b id="ackCount">0</b> / 10 acknowledged</div>
+                </div>
+                <div class="qfoot"><button class="qconfirm" data-confirm="t3">Confirm — I see them all</button></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 4 -->
+          <div class="block" id="b-t4">
+            <div class="vbubble">
+              <div class="av">G</div>
+              <div class="bub">
+                <div class="vmeta"><span class="vplay">▶</span>Voice · Task 4 <span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:05pm</span><button class="vskip">Skip ▸</button></div>
+                <div class="vbody"><p>Now — accountability. Deadlines force focus. Pick a target date.</p></div>
+              </div>
+            </div>
+            <div class="qbubble" data-task="t4">
+              <div class="av"><span class="raw">4</span></div>
+              <div class="qcard">
+                <div class="qhead"><span class="tasknum">Task 4 · Deadline</span><span class="qkind">date_picker</span><span class="answer-badge" id="ans-t4"></span><span class="edit-link" data-edit="t4">Edit</span></div>
+                <h3 class="qttl">When should this project be done?</h3>
+                <div class="qbody">
+                  <div class="cal">
+                    <div class="cal-head"><span class="arr">‹</span><span>October 2026</span><span class="arr">›</span></div>
+                    <div class="cal-grid" id="cal">
+                      <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="qfoot"><button class="qconfirm" data-confirm="t4" disabled>Confirm deadline</button><span class="live-ans" id="live-t4">Pick a date</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 5 -->
+          <div class="block" id="b-t5">
+            <div class="vbubble">
+              <div class="av">G</div>
+              <div class="bub">
+                <div class="vmeta"><span class="vplay">▶</span>Voice · Task 5 <span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:05pm</span><button class="vskip">Skip ▸</button></div>
+                <div class="vbody"><p>Be honest — this calibrates how hard I'll push you on the rough days.</p></div>
+              </div>
+            </div>
+            <div class="qbubble" data-task="t5">
+              <div class="av"><span class="raw">5</span></div>
+              <div class="qcard">
+                <div class="qhead"><span class="tasknum">Task 5 · How important?</span><span class="qkind">single_choice</span><span class="answer-badge" id="ans-t5"></span><span class="edit-link" data-edit="t5">Edit</span></div>
+                <h3 class="qttl">How important is this project to you?</h3>
+                <div class="qbody">
+                  <div class="scaled" data-scaled="t5">
+                    <div class="row" data-val="1 — Not important"><span class="rad"></span><div class="txt"><div class="t">1 — Not important</div><div class="d">Value is mostly in exploring or testing.</div></div></div>
+                    <div class="row" data-val="2 — Mildly important"><span class="rad"></span><div class="txt"><div class="t">2 — Mildly important</div><div class="d">Completion is nice-to-have.</div></div></div>
+                    <div class="row" data-val="3 — Moderately important"><span class="rad"></span><div class="txt"><div class="t">3 — Moderately important</div><div class="d">Partial progress still yields benefit.</div></div></div>
+                    <div class="row" data-val="4 — Very important"><span class="rad"></span><div class="txt"><div class="t">4 — Very important</div><div class="d">Value is largely tied to reaching the end-state.</div></div></div>
+                    <div class="row" data-val="5 — Critical"><span class="rad"></span><div class="txt"><div class="t">5 — Critical</div><div class="d">Failure defeats the entire purpose.</div></div></div>
+                  </div>
+                </div>
+                <div class="qfoot"><button class="qconfirm" data-confirm="t5" disabled>Confirm</button></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 6 -->
+          <div class="block" id="b-t6">
+            <div class="vbubble">
+              <div class="av">G</div>
+              <div class="bub">
+                <div class="vmeta"><span class="vplay">▶</span>Voice · Task 6 <span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:06pm</span><button class="vskip">Skip ▸</button></div>
+                <div class="vbody"><p>Last one. How much energy do you want to put into this — per day, or per week? Be realistic.</p></div>
+              </div>
+            </div>
+            <div class="qbubble" data-task="t6">
+              <div class="av"><span class="raw">6</span></div>
+              <div class="qcard">
+                <div class="qhead"><span class="tasknum">Task 6 · Energy budget</span><span class="qkind">slider</span><span class="answer-badge" id="ans-t6"></span><span class="edit-link" data-edit="t6">Edit</span></div>
+                <h3 class="qttl">How much time can you devote?</h3>
+                <div class="qbody">
+                  <div class="slider">
+                    <div class="scope" data-scope><button class="on">Per day</button><button>Per week</button></div>
+                    <div class="slider-val" id="energyVal">2 hours / day</div>
+                    <input type="range" min="0.5" max="8" step="0.5" value="2" class="srange" id="energy" />
+                    <div class="slider-ends"><span>30 min</span><span>8 hrs</span></div>
+                  </div>
+                </div>
+                <div class="qfoot"><button class="qconfirm" data-confirm="t6">Confirm energy</button></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CLOSE -->
+          <div class="block" id="b-close">
+            <div class="vbubble">
+              <div class="av">G</div>
+              <div class="bub">
+                <div class="vmeta"><span class="vplay">▶</span>Voice · Step 1 complete <span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:07pm</span><button class="vskip">Skip ▸</button></div>
+                <div class="vbody"><p>Beautiful — Step 1 done. If you get stuck on anything, I can find Domain Advisers, gardeners who'll come help, source equipment lists and the best local deals.</p><p><b>No matter what — if you want this to work, we'll make it work.</b></p></div>
+              </div>
+            </div>
+            <div class="qbubble show" style="margin-top:8px">
+              <div class="av" style="background:transparent;border-color:transparent"></div>
+              <div class="qcard" style="background:transparent;border-color:transparent;padding:8px 0">
+                <div class="qfoot"><button class="qconfirm">Continue to Step 2 — Requirements →</button><span class="live-ans">Step 2 &amp; 3 next iteration</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="minput">
+          <div class="ico">＋</div>
+          <input placeholder="Type a message or just listen…" />
+          <div class="ico">🎙</div>
+          <div class="ico">➤</div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="toast"></div>
+
+<script>
+  function toast(t){const el=document.querySelector('.toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1600);}
+
+  /* tokenize voice text into words for karaoke */
+  document.querySelectorAll('.vbubble .vbody').forEach(body=>{
+    body.querySelectorAll('p').forEach(p=>{
+      const out=document.createDocumentFragment();
+      const walk=(node)=>{
+        if(node.nodeType===3){
+          node.textContent.split(/(\s+)/).forEach(part=>{
+            if(/^\s+$/.test(part))out.appendChild(document.createTextNode(part));
+            else if(part.length){const s=document.createElement('span');s.className='vword';s.textContent=part;out.appendChild(s);}
+          });
+        } else if(node.nodeType===1){
+          const wasBold=node.tagName==='B';
+          node.childNodes.forEach(ch=>{
+            if(ch.nodeType===3){
+              ch.textContent.split(/(\s+)/).forEach(part=>{
+                if(/^\s+$/.test(part))out.appendChild(document.createTextNode(part));
+                else if(part.length){const b=document.createElement(wasBold?'b':'span');b.className='vword';b.textContent=part;out.appendChild(b);}
+              });
+            } else walk(ch);
+          });
+        }
+      };
+      Array.from(p.childNodes).forEach(walk);
+      p.innerHTML='';p.appendChild(out);
+    });
+  });
+
+  const WORD_MS=140;let activeAbort=null;
+  function playVoice(bub){
+    return new Promise(resolve=>{
+      bub.classList.add('playing');bub.classList.remove('done');
+      const words=Array.from(bub.querySelectorAll('.vword'));
+      let i=0,aborted=false;
+      activeAbort={abort:()=>{aborted=true;words.forEach(w=>{w.classList.add('spoken');w.classList.remove('now');});finish();}};
+      const finish=()=>{bub.classList.remove('playing');bub.classList.add('done');activeAbort=null;resolve();};
+      const tick=()=>{
+        if(aborted) return;
+        if(i>0) words[i-1].classList.remove('now');
+        if(i>=words.length){return finish();}
+        words[i].classList.add('spoken','now');
+        if(i%6===0){const cv=document.getElementById('cv');cv.scrollTo({top:cv.scrollHeight,behavior:'smooth'});}
+        i++;setTimeout(tick,WORD_MS);
+      };
+      tick();
+    });
+  }
+  document.querySelectorAll('.vbubble .vskip').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(activeAbort)activeAbort.abort();}));
+  document.querySelectorAll('.vbubble .vplay').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const v=b.closest('.vbubble');v.querySelectorAll('.vword').forEach(w=>{w.classList.remove('spoken','now');});playVoice(v);}));
+
+  const SEQ=['welcome','t1','t2','t3','t4','t5','t6','close'];
+  let curIdx=-1;
+  async function step(){
+    curIdx++;
+    if(curIdx>=SEQ.length) return;
+    const id=SEQ[curIdx];const el=document.getElementById('b-'+id);
+    el.classList.add('show');
+    setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),60);
+    const vb=el.querySelector('.vbubble');
+    if(vb) await playVoice(vb);
+    const card=el.querySelector('.qbubble');
+    if(card){setTimeout(()=>{card.classList.add('show');card.scrollIntoView({behavior:'smooth',block:'center'});},200);}
+    else {setTimeout(step,500);}
+  }
+  document.getElementById('beginBtn').addEventListener('click',()=>{
+    document.getElementById('b-begin').style.display='none';
+    step();
+  });
+
+  /* time picker */
+  const hrEl=document.getElementById('hr'),mnEl=document.getElementById('mn');
+  function timeStr(){const ampm=document.querySelector('[data-ampm] button.on').textContent;return `${parseInt(hrEl.textContent)}:${mnEl.textContent.padStart(2,'0')} ${ampm}`;}
+  function updT1(){document.getElementById('live-t1').textContent=timeStr();}
+  document.querySelectorAll('[data-tp]').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.tp;
+    if(k==='h+'){let h=parseInt(hrEl.textContent);h=h>=12?1:h+1;hrEl.textContent=h;}
+    if(k==='h-'){let h=parseInt(hrEl.textContent);h=h<=1?12:h-1;hrEl.textContent=h;}
+    if(k==='m+'){let m=parseInt(mnEl.textContent);m=(m+5)%60;mnEl.textContent=m.toString().padStart(2,'0');}
+    if(k==='m-'){let m=parseInt(mnEl.textContent);m=(m-5+60)%60;mnEl.textContent=m.toString().padStart(2,'0');}
+    updT1();
+  }));
+  document.querySelectorAll('[data-ampm] button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-ampm] button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');updT1();
+  }));
+
+  /* multi chips */
+  document.querySelectorAll('[data-multi]').forEach(g=>{
+    const tid=g.dataset.multi;const confirmBtn=document.querySelector(`[data-confirm="${tid}"]`);const live=document.getElementById('live-'+tid);
+    g.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+      c.classList.toggle('on');
+      const picks=Array.from(g.querySelectorAll('.chip.on')).map(x=>x.textContent.trim());
+      confirmBtn.disabled=picks.length===0;
+      live.textContent=picks.length?`${picks.length} selected`:'Pick at least one';
+    }));
+  });
+
+  /* acknowledge */
+  document.querySelectorAll('[data-alist]').forEach(g=>{
+    const cnt=document.getElementById('ackCount');
+    g.querySelectorAll('.al-item').forEach(it=>{
+      it.querySelector('.al-head').addEventListener('click',e=>{if(e.target.classList.contains('ck'))return;it.classList.toggle('open');});
+      it.querySelector('.ck').addEventListener('click',e=>{e.stopPropagation();it.classList.toggle('ack');cnt.textContent=g.querySelectorAll('.al-item.ack').length;});
+    });
+  });
+
+  /* calendar */
+  const cal=document.getElementById('cal');let selectedDate=null;
+  const confirmT4=document.querySelector('[data-confirm="t4"]');const liveT4=document.getElementById('live-t4');
+  [27,28,29,30].forEach(d=>{const e=document.createElement('div');e.className='day mute';e.textContent=d;cal.appendChild(e);});
+  for(let d=1;d<=31;d++){const e=document.createElement('div');e.className='day';e.textContent=d;e.addEventListener('click',()=>{cal.querySelectorAll('.day.sel').forEach(x=>x.classList.remove('sel'));e.classList.add('sel');selectedDate=`October ${d}, 2026`;liveT4.textContent=selectedDate;confirmT4.disabled=false;});cal.appendChild(e);}
+  for(let d=1;d<=6;d++){const e=document.createElement('div');e.className='day mute';e.textContent=d;cal.appendChild(e);}
+
+  /* scaled */
+  document.querySelectorAll('[data-scaled]').forEach(g=>{
+    const tid=g.dataset.scaled;const cb=document.querySelector(`[data-confirm="${tid}"]`);
+    g.querySelectorAll('.row').forEach(r=>r.addEventListener('click',()=>{g.querySelectorAll('.row').forEach(x=>x.classList.remove('sel'));r.classList.add('sel');cb.disabled=false;}));
+  });
+
+  /* slider */
+  const en=document.getElementById('energy'),ev=document.getElementById('energyVal');
+  function upd6(){const v=en.value;const u=document.querySelector('[data-scope] button.on')?.textContent.replace('Per ','/').trim()||'/day';ev.textContent=v+' hours '+u;en.style.setProperty('--p',((v-0.5)/(8-0.5)*100)+'%');}
+  en.addEventListener('input',upd6);upd6();
+  document.querySelectorAll('[data-scope] button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-scope] button').forEach(x=>x.classList.remove('on'));b.classList.add('on');upd6();}));
+
+  /* confirms */
+  function lockAndAdvance(tid, ansText){
+    const card=document.querySelector(`.qbubble[data-task="${tid}"]`);
+    card.classList.add('locked');
+    document.getElementById('ans-'+tid).textContent=ansText;
+    const done=document.querySelectorAll('.qbubble.locked').length;
+    document.getElementById('cbProg').textContent=`Task ${done} of 6`;
+    setTimeout(step,400);
+  }
+  document.querySelector('[data-confirm="t1"]').addEventListener('click',()=>lockAndAdvance('t1',timeStr()));
+  document.querySelector('[data-confirm="t2"]').addEventListener('click',()=>{const n=document.querySelectorAll('[data-multi="t2"] .chip.on').length;lockAndAdvance('t2',`${n} reasons`);});
+  document.querySelector('[data-confirm="t3"]').addEventListener('click',()=>{const n=document.querySelectorAll('[data-alist="t3"] .al-item.ack').length;lockAndAdvance('t3',`${n}/10 acknowledged`);});
+  document.querySelector('[data-confirm="t4"]').addEventListener('click',()=>lockAndAdvance('t4',selectedDate));
+  document.querySelector('[data-confirm="t5"]').addEventListener('click',()=>lockAndAdvance('t5',document.querySelector('[data-scaled="t5"] .row.sel').dataset.val));
+  document.querySelector('[data-confirm="t6"]').addEventListener('click',()=>lockAndAdvance('t6',ev.textContent));
+
+  document.querySelectorAll('.edit-link').forEach(e=>e.addEventListener('click',()=>{const tid=e.dataset.edit;document.querySelector(`.qbubble[data-task="${tid}"]`).classList.remove('locked');toast('Editing — confirm again');}));
+  document.querySelectorAll('.minput .ico').forEach(i=>i.addEventListener('click',()=>toast('Chat input')));
+  document.querySelectorAll('.rail .item').forEach(it=>it.addEventListener('click',()=>{document.querySelectorAll('.rail .item').forEach(x=>x.classList.remove('active'));it.classList.add('active');}));
+</script>
+</body>
+</html>

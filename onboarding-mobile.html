@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganttsy · Onboarding — Mobile</title>
+<style>
+  :root{
+    --bg:#0E0E10;--bg-2:#0B0B0D;--panel:#141416;--surface:#1C1C1F;--surface-hi:#242428;
+    --border:#262629;--border-hi:#34343a;
+    --text:#ECECEE;--text-2:#C7C7CD;--text-muted:#8C8C94;--text-dim:#5d5d65;--text-mute:#7d7d85;
+    --orange:#FF9B1A;--orange-text:#FFB658;--orange-tint:rgba(255,155,26,.12);--orange-bd:rgba(255,155,26,.42);
+    --green:#2BD27E;--green-text:#52DDA1;--green-tint:rgba(43,210,126,.12);--green-bd:rgba(43,210,126,.4);
+    --border-2:#3A3A3F;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#070708;color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;height:100%}
+  body{display:flex;align-items:center;justify-content:center}
+  .variant-tag{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#141416;border:1px solid var(--border-hi);color:var(--orange-text);font-size:11.5px;font-weight:700;padding:6px 16px;border-radius:999px;z-index:100;letter-spacing:.06em}
+  .variant-tag a{color:var(--text-muted);text-decoration:none;margin-left:12px;font-weight:600}
+
+  /* PHONE SHELL */
+  .shell{width:392px;height:824px;border-radius:44px;background:var(--bg-2);border:1px solid #232326;box-shadow:0 30px 70px rgba(0,0,0,.6);overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .statusbar{height:34px;display:flex;align-items:center;justify-content:space-between;padding:9px 28px 0;font-size:12px;font-weight:700;color:#fff;flex:0 0 auto}
+  .app-header{display:flex;align-items:center;justify-content:space-between;padding:3px 16px 11px;flex:0 0 auto}
+  .app-header .back{width:44px;height:44px;border-radius:50%;background:#1d1d20;border:1px solid #2c2c31;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;cursor:pointer}
+  .app-header .title{font-size:19px;font-weight:700;color:#fff}
+  .app-header .mav{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#d8b07a,#8a6638 70%);border:1.5px solid #0f0c0b}
+
+  .chat-space{flex:1;margin:0 10px;border-radius:26px;border:1px solid var(--border);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;position:relative;min-height:0}
+  .ctxbar{flex:0 0 auto;display:flex;align-items:center;gap:11px;padding:12px 15px;border-bottom:1px solid var(--border);background:var(--bg-2)}
+  .ctxbar .thumb{width:34px;height:34px;border-radius:9px;background:radial-gradient(circle at 40% 40%,#1f5e6e,#0c2730);flex:0 0 34px;position:relative}
+  .ctxbar .thumb::after{content:'🌱';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .ctxbar .ct{display:flex;flex-direction:column;min-width:0;flex:1}
+  .ctxbar .ct .l1{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ctxbar .ct .l2{font-size:11px;color:var(--text-muted);margin-top:2px}
+  .ring{--p:0;width:34px;height:34px;border-radius:50%;flex:0 0 34px;position:relative;background:conic-gradient(var(--orange) calc(var(--p)*1%),rgba(255,255,255,.09) 0);transition:background .35s}
+  .ring::after{content:'';position:absolute;inset:3.5px;border-radius:50%;background:var(--bg-2)}
+  .ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:var(--orange-text);z-index:1}
+
+  .crumbs{display:flex;align-items:center;gap:6px;background:var(--bg-2);padding:10px 15px;border-bottom:1px solid var(--border);font-size:11px;flex:0 0 auto;cursor:pointer}
+  .crumbs .seg{color:var(--text-2)}
+  .crumbs .seg.now{color:var(--orange-text);font-weight:700}
+  .crumbs .sep{color:var(--text-dim)}
+  .crumbs .progtxt{margin-left:auto;color:var(--text-mute);font-size:10.5px}
+  .crumbs .chev{color:var(--text-mute);font-size:11px}
+
+  .cv{flex:1;min-height:0;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+  .cv::-webkit-scrollbar{width:0}
+  #b-begin.show{margin:auto 0}
+
+  .minput{flex:0 0 auto;border-top:1px solid var(--border);background:var(--bg-2);padding:11px 12px;display:flex;align-items:center;gap:9px}
+  .minput .plus{width:34px;height:34px;border-radius:50%;background:var(--surface-hi);border:1px solid var(--border-hi);display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:17px;flex:0 0 34px;cursor:pointer}
+  .minput .field{flex:1;height:42px;background:var(--surface);border:1px solid var(--border-hi);border-radius:21px;display:flex;align-items:center;padding:0 14px;gap:10px}
+  .minput .field input{flex:1;background:transparent;border:0;outline:none;color:var(--text);font-size:13px;font-family:inherit}
+  .minput .field input::placeholder{color:var(--text-dim)}
+  .minput .field .mic{color:var(--text-muted);cursor:pointer}
+
+  .tabbar{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:10px 12px 14px}
+  .navpill{flex:1;height:60px;background:#141416;border:1px solid #242427;border-radius:30px;display:flex;align-items:center;justify-content:space-around;padding:0 6px}
+  .navtab{display:flex;flex-direction:column;align-items:center;gap:3px;color:#cbcbd0;font-size:10.5px;font-weight:500;padding:5px 7px;cursor:pointer}
+  .navtab .ic{font-size:16px}
+  .navtab.active{background:#2a2412;border-radius:18px;padding:7px 13px;color:var(--orange-text)}
+  .navtab.active .logo{display:flex;flex-direction:column;gap:2px;align-items:center}
+  .navtab.active .logo i{display:block;height:3px;border-radius:2px;background:var(--orange)}
+  .navtab.active .logo i:nth-child(1){width:15px}.navtab.active .logo i:nth-child(2){width:10px}.navtab.active .logo i:nth-child(3){width:13px}
+  .search-fab{width:60px;height:60px;border-radius:50%;background:#141416;border:1px solid #242427;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex:0 0 60px;cursor:pointer}
+
+  /* ===== ONBOARDING ===== */
+  .block{display:none;opacity:0;transform:translateY(8px);transition:opacity .35s,transform .35s}
+  .block.show{display:block;opacity:1;transform:none}
+
+  /* welcome / close transient cards */
+  .welcome-card{align-self:center;width:100%;background:linear-gradient(180deg,rgba(43,210,126,.06),rgba(43,210,126,.02));border:1px solid rgba(43,210,126,.32);border-left:3px solid var(--green);border-radius:14px;padding:14px 16px;transition:opacity .5s,transform .5s,max-height .5s,padding .5s,margin .5s,border .5s;overflow:hidden;max-height:600px}
+  .welcome-card.fade-out{opacity:0;transform:translateY(-12px);max-height:0;padding:0;margin:0;border:0}
+  .welcome-card .wm-head{display:flex;align-items:center;gap:7px;margin-bottom:9px;font-size:9.5px;color:var(--green-text);font-weight:800;letter-spacing:.05em;text-transform:uppercase;flex-wrap:wrap}
+  .welcome-card .vplay{width:22px;height:22px;border-radius:50%;background:var(--green-tint);border:1px solid var(--green-bd);color:var(--green-text);display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer}
+  .welcome-card.playing .vplay{background:var(--green);color:#0c2718}
+  .welcome-card .wave{display:flex;gap:2px;align-items:center;height:12px}
+  .welcome-card .wave i{display:block;width:2px;height:5px;background:var(--green);border-radius:1px;opacity:.4}
+  .welcome-card.playing .wave i{animation:wv 1s ease-in-out infinite}
+  .welcome-card.playing .wave i:nth-child(1){animation-delay:0s}.welcome-card.playing .wave i:nth-child(2){animation-delay:.12s}.welcome-card.playing .wave i:nth-child(3){animation-delay:.24s}.welcome-card.playing .wave i:nth-child(4){animation-delay:.36s}
+  @keyframes wv{0%,100%{height:5px;opacity:.4}50%{height:12px;opacity:1}}
+  .welcome-card .vts{margin-left:auto;font-size:9.5px;color:var(--text-mute);font-weight:500;letter-spacing:0;text-transform:none}
+  .welcome-card .vskip{font-size:9.5px;color:var(--text-muted);background:transparent;border:1px solid var(--border-hi);border-radius:999px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:0;text-transform:none}
+  .welcome-card .wm-body{font-size:13px;line-height:1.6;color:var(--text-2);text-align:center}
+  .welcome-card .wm-body p{margin:0 0 8px}.welcome-card .wm-body p:last-child{margin-bottom:0}
+  .vword{color:var(--text-dim);transition:color .25s,text-shadow .25s}
+  .vword.spoken{color:var(--text-2)}
+  .vword.now{color:var(--orange-text);text-shadow:0 0 8px rgba(255,155,26,.35)}
+  .welcome-card .vword.now{color:#cdf7e0;text-shadow:0 0 8px rgba(43,210,126,.35)}
+
+  /* task message */
+  .msg{display:flex;gap:8px;align-items:flex-start;transition:opacity .3s}
+  .msg .g{width:26px;height:26px;border-radius:50%;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex:0 0 26px;transition:background .3s,border-color .3s,color .3s}
+  .msg .bub{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border-hi);border-radius:12px;border-top-left-radius:5px;padding:11px 13px;transition:all .35s}
+
+  .qhead{display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+  .play-voice{position:relative;width:22px;height:22px;border-radius:50%;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:8px;flex:0 0 22px;font-family:inherit;transition:.2s}
+  .play-voice:hover{background:var(--orange);color:#1A1206}
+  .msg.playing .play-voice{background:var(--orange);color:#1A1206}
+  .msg.playing .play-voice::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--orange);animation:pulse 1.2s ease-out infinite}
+  @keyframes pulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.6);opacity:0}}
+  .qhead .tasknum{font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--orange-text);text-transform:uppercase}
+  .cardtag{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.05em;color:var(--text-mute);border:1px solid var(--border-2);border-radius:4px;padding:2px 5px;font-family:ui-monospace,Menlo,monospace}
+  .qhead .when{margin-left:auto;font-size:9.5px;color:var(--text-mute);font-weight:500}
+
+  /* caption strip */
+  .caption{max-height:0;opacity:0;overflow:hidden;transition:max-height .35s,opacity .25s,margin .35s,padding .35s,border .35s;background:rgba(43,210,126,.05);border:1px solid transparent;border-left:2px solid transparent;border-radius:9px;padding:0 11px}
+  .msg.playing .caption,.msg.replaying .caption{max-height:300px;opacity:1;padding:9px 11px;margin:0 0 10px;border-color:rgba(43,210,126,.28);border-left-color:var(--green)}
+  .caption .cap-meta{display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:9.5px;color:var(--green-text);font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+  .caption .wave{display:flex;gap:2px;align-items:center;height:10px}
+  .caption .wave i{display:block;width:2px;height:5px;background:var(--green);border-radius:1px;opacity:.5}
+  .msg.playing .caption .wave i,.msg.replaying .caption .wave i{animation:wv .9s ease-in-out infinite}
+  .caption .cap-skip{margin-left:auto;font-size:9.5px;color:var(--text-muted);background:transparent;border:1px solid var(--border-hi);border-radius:999px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:0;text-transform:none}
+  .caption .cap-body{font-size:11.5px;line-height:1.55;color:var(--text-2)}
+  .caption .cap-body p{margin:0 0 5px}.caption .cap-body p:last-child{margin-bottom:0}
+  .caption .cap-body b{color:var(--text);font-weight:700}
+
+  .msg .qbody,.msg .qttl,.msg .qhint,.msg .qfoot{transition:opacity .3s}
+  .msg.playing .qbody,.msg.playing .qttl,.msg.playing .qhint,.msg.playing .qfoot{opacity:.35;pointer-events:none}
+  .qttl{font-size:13.5px;font-weight:700;color:var(--text);margin:5px 0 4px;line-height:1.35}
+  .qhint{font-size:11px;color:var(--text-mute);font-style:italic;margin:0 0 10px;line-height:1.5}
+  .qfoot{margin-top:11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .qconfirm{padding:7px 13px;border-radius:9px;border:1px solid var(--orange);background:var(--orange);color:#1A1206;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em}
+  .qconfirm:disabled{opacity:.45;cursor:not-allowed}
+  .qfoot .live-ans{font-size:11px;color:var(--text-mute)}
+
+  /* LOCKED minimal */
+  .msg.locked{opacity:.94}
+  .msg.locked .g{background:var(--green);border-color:var(--green);color:#0c2718}
+  .msg.locked .bub{background:transparent;border:0;border-radius:0;padding:2px 0 0;box-shadow:none}
+  .msg.locked .qhead,
+  .msg.locked .caption,
+  .msg.locked .qttl,
+  .msg.locked .qhint,
+  .msg.locked .qbody,
+  .msg.locked .qfoot{display:none}
+  .msg.locked .locked-block{display:block}
+  .msg .locked-block{display:none}
+  .locked-block .lt{font-size:13.5px;font-weight:800;color:var(--text);line-height:1.3;letter-spacing:-.005em}
+  .locked-block .la{display:inline-block;font-size:12px;font-weight:700;color:var(--green-text);margin-top:5px;line-height:1.4;padding:4px 9px;border:1px solid var(--green-bd);border-radius:7px;background:rgba(43,210,126,.05);max-width:100%}
+  .locked-block .la.plain{padding:0;border:0;background:transparent;border-radius:0}
+  .locked-block .la small{display:block;color:var(--text-muted);font-weight:500;font-size:10.5px;margin-top:2px;letter-spacing:0;white-space:normal}
+  .locked-block .la .checks{letter-spacing:1px;font-size:13px}
+  .locked-block .edit{margin-left:7px;font-size:10px;color:var(--orange-text);cursor:pointer;font-weight:600;text-transform:none;letter-spacing:0}
+
+  /* card UIs */
+  .tp{display:flex;gap:8px;align-items:center;background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:11px;padding:10px 12px}
+  .tp .col{display:flex;flex-direction:column;align-items:center;gap:5px;flex:0 0 auto}
+  .tp .col .stp{width:22px;height:18px;border-radius:5px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px}
+  .tp .col .stp:hover{color:var(--text);border-color:var(--text-muted)}
+  .tp .col .v{font-size:24px;font-weight:700;letter-spacing:-.02em;color:var(--text);min-width:36px;text-align:center;line-height:1}
+  .tp .col .m{font-size:9.5px;color:var(--text-mute);letter-spacing:.05em;text-transform:uppercase}
+  .tp .sep{font-size:22px;color:var(--text-dim);font-weight:300}
+  .ampm{display:flex;gap:3px;margin-left:auto}
+  .ampm button{padding:6px 10px;border-radius:7px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .ampm button.on{background:var(--orange);border-color:var(--orange);color:#1A1206}
+
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{padding:6px 10px;border-radius:999px;border:1px solid var(--border-hi);background:var(--surface-hi);color:var(--text-2);font-size:11.5px;cursor:pointer;font-family:inherit;transition:.12s}
+  .chip:hover{border-color:var(--text-muted)}
+  .chip.on{background:var(--orange);border-color:var(--orange);color:#1A1206;font-weight:700}
+
+  .alist{display:flex;flex-direction:column;gap:5px}
+  .al-item{border:1px solid var(--border-hi);background:var(--surface-hi);border-radius:9px;overflow:hidden}
+  .al-head{display:flex;align-items:center;gap:9px;padding:8px 11px;cursor:pointer}
+  .al-head .ck{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--text-mute);flex:0 0 16px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#0c2718;font-weight:900}
+  .al-item.ack .al-head .ck{background:var(--green);border-color:var(--green)}
+  .al-item.ack .al-head .ck::before{content:"✓"}
+  .al-head .lbl{flex:1;font-size:12px;font-weight:600}
+  .al-head .ch{color:var(--text-dim);font-size:11px;transition:transform .2s}
+  .al-item.open .al-head .ch{transform:rotate(180deg)}
+  .al-body{display:none;padding:0 11px 10px 36px;font-size:11px;color:var(--text-muted);line-height:1.5}
+  .al-item.open .al-body{display:block}
+  .al-count{font-size:11px;color:var(--text-mute);margin-top:7px}
+  .al-count b{color:var(--green-text);font-weight:700}
+
+  .cal{background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:12px;padding:11px;max-width:300px}
+  .cal-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;margin-bottom:10px}
+  .cal-head .arr{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--orange-text);cursor:pointer;font-size:13px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .dow{font-size:9px;color:var(--text-mute);text-align:center;padding:3px 0;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  .day{font-size:11px;text-align:center;padding:5px 0;border-radius:6px;color:var(--text-2);cursor:pointer}
+  .day.mute{color:var(--text-mute);opacity:.5;cursor:default}
+  .day:hover:not(.mute){background:var(--surface)}
+  .day.sel{background:var(--green);color:#0c2718;font-weight:700}
+
+  .scaled{display:flex;flex-direction:column;gap:6px}
+  .scaled .row{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--border-hi);background:var(--surface-hi);border-radius:9px;cursor:pointer;transition:.12s}
+  .scaled .row:hover{border-color:var(--text-muted)}
+  .scaled .row.sel{border-color:var(--orange);background:var(--orange-tint)}
+  .scaled .row .rad{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--text-mute);flex:0 0 16px;margin-top:1px}
+  .scaled .row.sel .rad{border-color:var(--orange);box-shadow:inset 0 0 0 4px var(--orange)}
+  .scaled .row .txt .t{font-size:12.5px;font-weight:700;color:var(--text)}
+  .scaled .row .txt .d{font-size:10.5px;color:var(--text-muted);margin-top:3px;line-height:1.45}
+
+  .slider{background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:11px;padding:13px}
+  .scope{display:flex;gap:5px;margin-bottom:10px}
+  .scope button{padding:5px 11px;border-radius:7px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .scope button.on{background:var(--orange);border-color:var(--orange);color:#1A1206}
+  .slider-val{display:inline-flex;padding:4px 12px;border-radius:999px;background:var(--orange-tint);color:var(--orange-text);font-weight:700;font-size:12px;margin-bottom:11px}
+  .srange{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:99px;background:linear-gradient(90deg,var(--orange) 0%,var(--orange) var(--p,20%),var(--surface) var(--p,20%),var(--surface) 100%);outline:none}
+  .srange::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.5),0 0 0 4px rgba(255,155,26,.25)}
+  .slider-ends{display:flex;justify-content:space-between;font-size:10px;color:var(--text-mute);margin-top:8px}
+
+  .begin-pad{padding:20px 0 10px;text-align:center}
+  .begin-pad .ttl{font-size:17px;font-weight:800;margin-bottom:5px}
+  .begin-pad .sub{font-size:11.5px;color:var(--text-muted);margin-bottom:15px;padding:0 18px;line-height:1.5}
+  .begin-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 20px;border-radius:999px;background:var(--orange);border:0;color:#1A1206;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit;box-shadow:0 8px 22px rgba(255,155,26,.25)}
+  .begin-btn .pl{width:16px;height:16px;border-radius:50%;background:#1A1206;color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:7px}
+
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(10px);background:#27272b;border:1px solid var(--border-hi);color:var(--text);font-size:13px;font-weight:600;padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;z-index:80}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="variant-tag">MOBILE · Onboarding <a href="onboarding-c.html">→ Desktop</a></div>
+<div class="shell">
+  <div class="statusbar"><span>9:41</span><span>􀙇 􀛨 􀛤</span></div>
+  <div class="app-header"><div class="back">‹</div><div class="title">Onboarding</div><div class="mav"></div></div>
+
+  <div class="chat-space">
+    <div class="ctxbar">
+      <div class="thumb"></div>
+      <div class="ct"><span class="l1">Starting a Vegetable Garden</span><span class="l2">Phase 1 · Milestone 1</span></div>
+      <div class="ring" style="--p:0" id="progRing"><span id="progPct">0%</span></div>
+    </div>
+    <div class="crumbs">
+      <span class="seg">Phase 1</span><span class="sep">›</span>
+      <span class="seg">M1</span><span class="sep">›</span>
+      <span class="seg now">Step 1: Setup</span>
+      <span class="progtxt" id="cbProg">0 / 6</span>
+      <span class="chev">⌄</span>
+    </div>
+
+    <div class="cv" id="cv">
+
+      <!-- BEGIN -->
+      <div class="block show" id="b-begin">
+        <div class="begin-pad">
+          <div class="ttl">Welcome to Ganttsy.</div>
+          <div class="sub">I'll voice-guide you through setting up your first project — ~3 min.</div>
+          <button class="begin-btn" id="beginBtn"><span class="pl">▶</span>Begin onboarding</button>
+        </div>
+      </div>
+
+      <!-- WELCOME -->
+      <div class="block" id="b-welcome">
+        <div class="welcome-card" id="welcomeCard">
+          <div class="wm-head"><span class="vplay">▶</span>Voice · Welcome<span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">2:03pm</span><button class="vskip">Skip</button></div>
+          <div class="wm-body">
+            <p>Welcome to your very first project, "Starting a Vegetable Garden".</p>
+            <p>Projects don't typically succeed with just grit or discipline. They require strategy, planning and vision.</p>
+            <p>Let's establish a few big ones up front…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASK 1 -->
+      <div class="block" id="b-t1">
+        <div class="msg" data-task="t1">
+          <div class="g">1</div>
+          <div class="bub">
+            <div class="locked-block">
+              <span class="lt">Daily Check-ins</span><span class="edit" data-edit="t1">edit</span>
+              <div class="la" id="lockans-t1"></div>
+            </div>
+            <div class="qhead">
+              <button class="play-voice" data-voice="t1">▶</button>
+              <span class="tasknum">Task 1</span>
+              <span class="cardtag">time_picker</span>
+              <span class="when">2:03pm</span>
+            </div>
+            <div class="caption" data-cap="t1">
+              <div class="cap-meta">Voice <span class="wave"><i></i><i></i><i></i><i></i></span><button class="cap-skip">Skip</button></div>
+              <div class="cap-body"><p>Once a day I'll check in — momentum, focus, and tomorrow's smooth start. Pick the time that works best.</p></div>
+            </div>
+            <h3 class="qttl">When should I check in?</h3>
+            <div class="qbody">
+              <div class="tp">
+                <div class="col"><button class="stp" data-tp="h+">▲</button><div class="v" id="hr">2</div><button class="stp" data-tp="h-">▼</button><div class="m">hr</div></div>
+                <div class="sep">:</div>
+                <div class="col"><button class="stp" data-tp="m+">▲</button><div class="v" id="mn">03</div><button class="stp" data-tp="m-">▼</button><div class="m">min</div></div>
+                <div class="ampm" data-ampm><button>AM</button><button class="on">PM</button></div>
+              </div>
+            </div>
+            <div class="qfoot"><button class="qconfirm" data-confirm="t1">Confirm</button><span class="live-ans" id="live-t1">2:03 PM</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASK 2 -->
+      <div class="block" id="b-t2">
+        <div class="msg" data-task="t2">
+          <div class="g">2</div>
+          <div class="bub">
+            <div class="locked-block">
+              <span class="lt">The "why"</span><span class="edit" data-edit="t2">edit</span>
+              <div class="la" id="lockans-t2"></div>
+            </div>
+            <div class="qhead">
+              <button class="play-voice" data-voice="t2">▶</button>
+              <span class="tasknum">Task 2</span>
+              <span class="cardtag">multi_select</span>
+              <span class="when">2:04pm</span>
+            </div>
+            <div class="caption" data-cap="t2">
+              <div class="cap-meta">Voice <span class="wave"><i></i><i></i><i></i><i></i></span><button class="cap-skip">Skip</button></div>
+              <div class="cap-body"><p>The all-important <b>why</b>. Vague ideas are a top quit-reason. Pick every reason — even partial.</p></div>
+            </div>
+            <h3 class="qttl">Why are you doing this?</h3>
+            <p class="qhint">Pick as many as apply.</p>
+            <div class="qbody">
+              <div class="chips" data-multi="t2">
+                <button class="chip">Grow my own food</button><button class="chip">Outdoor time</button><button class="chip">Save on groceries</button><button class="chip">Teach my kids</button><button class="chip">Relaxing hobby</button><button class="chip">Eat healthier</button><button class="chip">Reduce waste</button><button class="chip">Pollinators</button><button class="chip">Curb appeal</button><button class="chip">Self-sufficiency</button><button class="chip">Other</button>
+              </div>
+            </div>
+            <div class="qfoot"><button class="qconfirm" data-confirm="t2" disabled>Confirm</button><span class="live-ans" id="live-t2">Pick ≥ 1</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASK 3 -->
+      <div class="block" id="b-t3">
+        <div class="msg" data-task="t3">
+          <div class="g">3</div>
+          <div class="bub">
+            <div class="locked-block">
+              <span class="lt">Why People Quit</span><span class="edit" data-edit="t3">edit</span>
+              <div class="la plain" id="lockans-t3"></div>
+            </div>
+            <div class="qhead">
+              <button class="play-voice" data-voice="t3">▶</button>
+              <span class="tasknum">Task 3</span>
+              <span class="cardtag">acknowledge_list</span>
+              <span class="when">2:04pm</span>
+            </div>
+            <div class="caption" data-cap="t3">
+              <div class="cap-meta">Voice <span class="wave"><i></i><i></i><i></i><i></i></span><button class="cap-skip">Skip</button></div>
+              <div class="cap-body"><p>Understand what stands in the way. Tap each to acknowledge — we'll guard against all of them.</p></div>
+            </div>
+            <h3 class="qttl">Acknowledge each obstacle</h3>
+            <div class="qbody">
+              <div class="alist" data-alist="t3">
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Lack of clear goals</span><span class="ch">⌄</span></div><div class="al-body">No finish line. Drift wins.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Poor planning</span><span class="ch">⌄</span></div><div class="al-body">Underestimated effort — stalls.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Loss of motivation</span><span class="ch">⌄</span></div><div class="al-body">Excitement fades. Check-ins counter this.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Competing priorities</span><span class="ch">⌄</span></div><div class="al-body">Life takes over. Energy budget helps.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Resource constraints</span><span class="ch">⌄</span></div><div class="al-body">Inventory comes in Step 3.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Skill gaps</span><span class="ch">⌄</span></div><div class="al-body">We surface these and find help.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Fear of failure</span><span class="ch">⌄</span></div><div class="al-body">Small wins reframe the arc.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Perfectionism</span><span class="ch">⌄</span></div><div class="al-body">"Good enough" ships.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Weak accountability</span><span class="ch">⌄</span></div><div class="al-body">We set deadlines next.</div></div>
+                <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Scope creep</span><span class="ch">⌄</span></div><div class="al-body">We define and protect scope.</div></div>
+              </div>
+              <div class="al-count"><b id="ackCount">0</b> / 10 acknowledged</div>
+            </div>
+            <div class="qfoot"><button class="qconfirm" data-confirm="t3">Confirm</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASK 4 -->
+      <div class="block" id="b-t4">
+        <div class="msg" data-task="t4">
+          <div class="g">4</div>
+          <div class="bub">
+            <div class="locked-block">
+              <span class="lt">Deadline?</span><span class="edit" data-edit="t4">edit</span>
+              <div class="la plain" id="lockans-t4"></div>
+            </div>
+            <div class="qhead"><button class="play-voice" data-voice="t4">▶</button><span class="tasknum">Task 4</span><span class="cardtag">date_picker</span><span class="when">2:05pm</span></div>
+            <div class="caption" data-cap="t4">
+              <div class="cap-meta">Voice <span class="wave"><i></i><i></i><i></i><i></i></span><button class="cap-skip">Skip</button></div>
+              <div class="cap-body"><p>Accountability. Deadlines force focus. Pick a target date.</p></div>
+            </div>
+            <h3 class="qttl">When should this be done?</h3>
+            <div class="qbody">
+              <div class="cal">
+                <div class="cal-head"><span class="arr">‹</span><span>Oct 2026</span><span class="arr">›</span></div>
+                <div class="cal-grid" id="cal">
+                  <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+                </div>
+              </div>
+            </div>
+            <div class="qfoot"><button class="qconfirm" data-confirm="t4" disabled>Confirm</button><span class="live-ans" id="live-t4">Pick a date</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASK 5 -->
+      <div class="block" id="b-t5">
+        <div class="msg" data-task="t5">
+          <div class="g">5</div>
+          <div class="bub">
+            <div class="locked-block">
+              <span class="lt">How Important is this</span><span class="edit" data-edit="t5">edit</span>
+              <div class="la" id="lockans-t5"></div>
+            </div>
+            <div class="qhead"><button class="play-voice" data-voice="t5">▶</button><span class="tasknum">Task 5</span><span class="cardtag">single_choice</span><span class="when">2:05pm</span></div>
+            <div class="caption" data-cap="t5">
+              <div class="cap-meta">Voice <span class="wave"><i></i><i></i><i></i><i></i></span><button class="cap-skip">Skip</button></div>
+              <div class="cap-body"><p>Be honest — this calibrates how hard I'll push on rough days.</p></div>
+            </div>
+            <h3 class="qttl">How important is this?</h3>
+            <div class="qbody">
+              <div class="scaled" data-scaled="t5">
+                <div class="row" data-val="1 — Not important" data-desc="Mostly exploring."><span class="rad"></span><div class="txt"><div class="t">1 — Not important</div><div class="d">Mostly exploring.</div></div></div>
+                <div class="row" data-val="2 — Mildly important" data-desc="Nice-to-have."><span class="rad"></span><div class="txt"><div class="t">2 — Mildly important</div><div class="d">Nice-to-have.</div></div></div>
+                <div class="row" data-val="3 — Moderately important" data-desc="Partial progress helps."><span class="rad"></span><div class="txt"><div class="t">3 — Moderately important</div><div class="d">Partial progress helps.</div></div></div>
+                <div class="row" data-val="4 — Very important" data-desc="Value tied to the end-state."><span class="rad"></span><div class="txt"><div class="t">4 — Very important</div><div class="d">Value tied to the end-state.</div></div></div>
+                <div class="row" data-val="5 — Critical" data-desc="Failure defeats the purpose."><span class="rad"></span><div class="txt"><div class="t">5 — Critical</div><div class="d">Failure defeats the purpose.</div></div></div>
+              </div>
+            </div>
+            <div class="qfoot"><button class="qconfirm" data-confirm="t5" disabled>Confirm</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASK 6 -->
+      <div class="block" id="b-t6">
+        <div class="msg" data-task="t6">
+          <div class="g">6</div>
+          <div class="bub">
+            <div class="locked-block">
+              <span class="lt">Energy per day / week</span><span class="edit" data-edit="t6">edit</span>
+              <div class="la plain" id="lockans-t6"></div>
+            </div>
+            <div class="qhead"><button class="play-voice" data-voice="t6">▶</button><span class="tasknum">Task 6</span><span class="cardtag">slider</span><span class="when">2:06pm</span></div>
+            <div class="caption" data-cap="t6">
+              <div class="cap-meta">Voice <span class="wave"><i></i><i></i><i></i><i></i></span><button class="cap-skip">Skip</button></div>
+              <div class="cap-body"><p>How much energy per day or week — be realistic. Protects from burnout.</p></div>
+            </div>
+            <h3 class="qttl">How much time can you devote?</h3>
+            <div class="qbody">
+              <div class="slider">
+                <div class="scope" data-scope><button class="on">Per day</button><button>Per week</button></div>
+                <div class="slider-val" id="energyVal">2 hours / day</div>
+                <input type="range" min="0.5" max="8" step="0.5" value="2" class="srange" id="energy" />
+                <div class="slider-ends"><span>30m</span><span>8 hrs</span></div>
+              </div>
+            </div>
+            <div class="qfoot"><button class="qconfirm" data-confirm="t6">Confirm</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLOSE -->
+      <div class="block" id="b-close">
+        <div class="welcome-card" id="closeCard">
+          <div class="wm-head"><span class="vplay">▶</span>Voice · Step 1 done<span class="wave"><i></i><i></i><i></i><i></i></span><span class="vts">2:07pm</span><button class="vskip">Skip</button></div>
+          <div class="wm-body"><p>Beautiful — Step 1 done. If you get stuck, I can find Domain Advisers, gardeners to help, and source equipment.</p><p><b>If you want this to work, we'll make it work.</b></p></div>
+        </div>
+        <div id="closeCta" style="display:none;text-align:center;padding:10px 0">
+          <button class="qconfirm">Continue to Step 2 →</button>
+          <div style="font-size:10.5px;color:var(--text-mute);margin-top:7px"><a href="#" id="replayClose" style="color:var(--orange-text);text-decoration:none;font-weight:600">▶ Hear again</a></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="minput">
+      <span class="plus">＋</span>
+      <div class="field"><input placeholder="Ask anything…" /><span class="mic">🎙</span></div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="navpill">
+      <div class="navtab"><span class="ic">⌂</span>Home</div>
+      <div class="navtab active"><span class="logo"><i></i><i></i><i></i></span>Projects</div>
+      <div class="navtab"><span class="ic">⚑</span>Follow</div>
+      <div class="navtab"><span class="ic">⊕</span>Create</div>
+    </div>
+    <div class="search-fab">⌕</div>
+  </div>
+</div>
+<div class="toast"></div>
+
+<script>
+  function toast(t){const el=document.querySelector('.toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1600);}
+
+  function tokenize(root){
+    root.querySelectorAll('p').forEach(p=>{
+      const out=document.createDocumentFragment();
+      const walk=(node)=>{
+        if(node.nodeType===3){
+          node.textContent.split(/(\s+)/).forEach(part=>{
+            if(/^\s+$/.test(part))out.appendChild(document.createTextNode(part));
+            else if(part.length){const s=document.createElement('span');s.className='vword';s.textContent=part;out.appendChild(s);}
+          });
+        } else if(node.nodeType===1){
+          const wasBold=node.tagName==='B';
+          node.childNodes.forEach(ch=>{
+            if(ch.nodeType===3){
+              ch.textContent.split(/(\s+)/).forEach(part=>{
+                if(/^\s+$/.test(part))out.appendChild(document.createTextNode(part));
+                else if(part.length){const b=document.createElement(wasBold?'b':'span');b.className='vword';b.textContent=part;out.appendChild(b);}
+              });
+            } else walk(ch);
+          });
+        }
+      };
+      Array.from(p.childNodes).forEach(walk);
+      p.innerHTML='';p.appendChild(out);
+    });
+  }
+  document.querySelectorAll('.welcome-card .wm-body, .caption .cap-body').forEach(tokenize);
+
+  const WORD_MS=140;let activeAbort=null;
+  function playVoice(textRoot,onDone){
+    const words=Array.from(textRoot.querySelectorAll('.vword'));
+    words.forEach(w=>{w.classList.remove('spoken','now');});
+    let i=0,aborted=false;
+    activeAbort={abort:()=>{aborted=true;words.forEach(w=>{w.classList.add('spoken');w.classList.remove('now');});finish();}};
+    const finish=()=>{activeAbort=null;onDone&&onDone();};
+    const tick=()=>{
+      if(aborted)return;
+      if(i>0)words[i-1].classList.remove('now');
+      if(i>=words.length){return finish();}
+      words[i].classList.add('spoken','now');
+      if(i%6===0){const cv=document.getElementById('cv');cv.scrollTo({top:cv.scrollHeight,behavior:'smooth'});}
+      i++;setTimeout(tick,WORD_MS);
+    };
+    tick();
+  }
+  function playWelcome(card){return new Promise(resolve=>{card.classList.add('playing');playVoice(card.querySelector('.wm-body'),()=>{card.classList.remove('playing');resolve();});});}
+  function playTaskVoice(msg,isReplay){return new Promise(resolve=>{msg.classList.add(isReplay?'replaying':'playing');playVoice(msg.querySelector('.caption .cap-body'),()=>{setTimeout(()=>{msg.classList.remove('playing','replaying');resolve();},isReplay?400:300);});});}
+
+  document.querySelectorAll('.cap-skip, .welcome-card .vskip').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(activeAbort)activeAbort.abort();}));
+  document.querySelectorAll('.play-voice').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const m=b.closest('.msg');if(m.classList.contains('playing')||m.classList.contains('replaying'))return;playTaskVoice(m,true);}));
+  document.querySelectorAll('.welcome-card .vplay').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();playWelcome(b.closest('.welcome-card'));}));
+
+  const SEQ=['welcome','t1','t2','t3','t4','t5','t6','close'];
+  let curIdx=-1;
+  async function step(){
+    curIdx++;
+    if(curIdx>=SEQ.length)return;
+    const id=SEQ[curIdx];const el=document.getElementById('b-'+id);
+    el.classList.add('show');
+    setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'center'}),60);
+    if(id==='welcome'){
+      const card=document.getElementById('welcomeCard');await playWelcome(card);
+      setTimeout(()=>{card.classList.add('fade-out');setTimeout(()=>{el.style.display='none';step();},600);},700);
+    } else if(id==='close'){
+      const card=document.getElementById('closeCard');await playWelcome(card);
+      setTimeout(()=>{card.classList.add('fade-out');document.getElementById('closeCta').style.display='block';setTimeout(()=>document.getElementById('closeCta').scrollIntoView({behavior:'smooth',block:'center'}),250);},700);
+    } else {
+      await playTaskVoice(el.querySelector('.msg'),false);
+    }
+  }
+  document.getElementById('beginBtn').addEventListener('click',()=>{document.getElementById('b-begin').style.display='none';step();});
+  document.getElementById('replayClose').addEventListener('click',e=>{e.preventDefault();const card=document.getElementById('closeCard');card.classList.remove('fade-out');playWelcome(card);});
+
+  const hrEl=document.getElementById('hr'),mnEl=document.getElementById('mn');
+  function timeStr(){const ampm=document.querySelector('[data-ampm] button.on').textContent;return `${parseInt(hrEl.textContent)}:${mnEl.textContent.padStart(2,'0')} ${ampm}`;}
+  function updT1(){document.getElementById('live-t1').textContent=timeStr();}
+  document.querySelectorAll('[data-tp]').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.tp;
+    if(k==='h+'){let h=parseInt(hrEl.textContent);h=h>=12?1:h+1;hrEl.textContent=h;}
+    if(k==='h-'){let h=parseInt(hrEl.textContent);h=h<=1?12:h-1;hrEl.textContent=h;}
+    if(k==='m+'){let m=parseInt(mnEl.textContent);m=(m+5)%60;mnEl.textContent=m.toString().padStart(2,'0');}
+    if(k==='m-'){let m=parseInt(mnEl.textContent);m=(m-5+60)%60;mnEl.textContent=m.toString().padStart(2,'0');}
+    updT1();
+  }));
+  document.querySelectorAll('[data-ampm] button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-ampm] button').forEach(x=>x.classList.remove('on'));b.classList.add('on');updT1();}));
+
+  document.querySelectorAll('[data-multi]').forEach(g=>{
+    const tid=g.dataset.multi;const cb=document.querySelector(`[data-confirm="${tid}"]`);const live=document.getElementById('live-'+tid);
+    g.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+      c.classList.toggle('on');
+      const picks=Array.from(g.querySelectorAll('.chip.on')).map(x=>x.textContent.trim());
+      cb.disabled=picks.length===0;
+      live.textContent=picks.length?`${picks.length} selected`:'Pick ≥ 1';
+    }));
+  });
+
+  document.querySelectorAll('[data-alist]').forEach(g=>{
+    const cnt=document.getElementById('ackCount');
+    g.querySelectorAll('.al-item').forEach(it=>{
+      it.querySelector('.al-head').addEventListener('click',e=>{if(e.target.classList.contains('ck'))return;it.classList.toggle('open');});
+      it.querySelector('.ck').addEventListener('click',e=>{e.stopPropagation();it.classList.toggle('ack');cnt.textContent=g.querySelectorAll('.al-item.ack').length;});
+    });
+  });
+
+  const cal=document.getElementById('cal');let selectedDate=null;
+  const confirmT4=document.querySelector('[data-confirm="t4"]');const liveT4=document.getElementById('live-t4');
+  [27,28,29,30].forEach(d=>{const e=document.createElement('div');e.className='day mute';e.textContent=d;cal.appendChild(e);});
+  for(let d=1;d<=31;d++){const e=document.createElement('div');e.className='day';e.textContent=d;e.addEventListener('click',()=>{cal.querySelectorAll('.day.sel').forEach(x=>x.classList.remove('sel'));e.classList.add('sel');selectedDate=`Oct ${d}, 2026`;liveT4.textContent=selectedDate;confirmT4.disabled=false;});cal.appendChild(e);}
+  for(let d=1;d<=6;d++){const e=document.createElement('div');e.className='day mute';e.textContent=d;cal.appendChild(e);}
+
+  document.querySelectorAll('[data-scaled]').forEach(g=>{
+    const tid=g.dataset.scaled;const cb=document.querySelector(`[data-confirm="${tid}"]`);
+    g.querySelectorAll('.row').forEach(r=>r.addEventListener('click',()=>{g.querySelectorAll('.row').forEach(x=>x.classList.remove('sel'));r.classList.add('sel');cb.disabled=false;}));
+  });
+
+  const en=document.getElementById('energy'),ev=document.getElementById('energyVal');
+  function upd6(){const v=en.value;const u=document.querySelector('[data-scope] button.on')?.textContent.replace('Per ','/').trim()||'/day';ev.textContent=v+' hours '+u;en.style.setProperty('--p',((v-0.5)/(8-0.5)*100)+'%');}
+  en.addEventListener('input',upd6);upd6();
+  document.querySelectorAll('[data-scope] button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-scope] button').forEach(x=>x.classList.remove('on'));b.classList.add('on');upd6();}));
+
+  function setLockAns(tid,html,plain){const el=document.getElementById('lockans-'+tid);el.innerHTML=html;if(plain)el.classList.add('plain');else el.classList.remove('plain');}
+  function lockAndAdvance(tid){
+    const m=document.querySelector(`.msg[data-task="${tid}"]`);m.classList.add('locked');
+    const done=document.querySelectorAll('.msg.locked').length;
+    const pct=Math.round(done/6*100);
+    document.getElementById('progPct').textContent=pct+'%';
+    document.getElementById('progRing').style.setProperty('--p',pct);
+    document.getElementById('cbProg').textContent=`${done} / 6`;
+    setTimeout(step,400);
+  }
+
+  document.querySelector('[data-confirm="t1"]').addEventListener('click',()=>{setLockAns('t1',timeStr(),true);lockAndAdvance('t1');});
+  document.querySelector('[data-confirm="t2"]').addEventListener('click',()=>{
+    const picks=Array.from(document.querySelectorAll('[data-multi="t2"] .chip.on')).map(x=>x.textContent.trim());
+    const txt=picks.length>2?`${picks.slice(0,2).join(', ')} +${picks.length-2}`:picks.join(', ');
+    setLockAns('t2',txt||'—',false);lockAndAdvance('t2');
+  });
+  document.querySelector('[data-confirm="t3"]').addEventListener('click',()=>{
+    const n=document.querySelectorAll('[data-alist="t3"] .al-item.ack').length;
+    setLockAns('t3','<span class="checks">'+'✓'.repeat(Math.max(n,1))+'</span>',true);lockAndAdvance('t3');
+  });
+  document.querySelector('[data-confirm="t4"]').addEventListener('click',()=>{setLockAns('t4',selectedDate||'—',true);lockAndAdvance('t4');});
+  document.querySelector('[data-confirm="t5"]').addEventListener('click',()=>{
+    const sel=document.querySelector('[data-scaled="t5"] .row.sel');
+    setLockAns('t5',`${sel.dataset.val}<small>${sel.dataset.desc}</small>`,false);lockAndAdvance('t5');
+  });
+  document.querySelector('[data-confirm="t6"]').addEventListener('click',()=>{setLockAns('t6',ev.textContent,true);lockAndAdvance('t6');});
+
+  document.querySelectorAll('.edit').forEach(e=>e.addEventListener('click',ev=>{ev.stopPropagation();const tid=e.dataset.edit;document.querySelector(`.msg[data-task="${tid}"]`).classList.remove('locked');toast('Editing — confirm again');}));
+  document.querySelectorAll('.navtab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.navtab').forEach(x=>x.classList.remove('active'));t.classList.add('active');}));
+  document.querySelectorAll('.search-fab, .app-header .back, .app-header .mav, .minput .plus, .minput .mic').forEach(i=>i.addEventListener('click',()=>toast('Action')));
+</script>
+</body>
+</html>

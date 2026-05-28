@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganttsy — Onboarding · Starting a Vegetable Garden</title>
+<style>
+  :root{
+    --bg:#0E0E10;--bg-2:#0B0B0D;--panel:#141416;--surface:#1C1C1F;--surface-hi:#242428;
+    --border:#262629;--border-hi:#34343a;
+    --text:#ECECEE;--text-2:#C7C7CD;--text-muted:#8C8C94;--text-dim:#5d5d65;--text-mute:#7d7d85;
+    --orange:#FF9B1A;--orange-text:#FFB658;--orange-tint:rgba(255,155,26,.12);--orange-bd:rgba(255,155,26,.42);
+    --green:#2BD27E;--green-text:#52DDA1;--green-tint:rgba(43,210,126,.12);--green-bd:rgba(43,210,126,.4);
+    --yellow:#E8B53C;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;background:#070708;color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .app{width:min(1380px,96vw);height:min(960px,92vh);margin:24px auto;background:var(--bg);border-radius:22px;overflow:hidden;display:flex;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+
+  /* RAIL */
+  .rail{width:84px;background:var(--bg-2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:22px 0;gap:6px;flex:0 0 84px}
+  .rail .item{width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0;border-radius:12px;color:var(--text-muted);font-size:10.5px;cursor:pointer}
+  .rail .item .ic{font-size:17px}
+  .rail .item.active{background:var(--orange-tint);color:var(--orange-text)}
+  .rail .item.active .logo{display:flex;flex-direction:column;gap:2.5px;align-items:center}
+  .rail .item.active .logo i{display:block;height:3px;border-radius:2px;background:var(--orange)}
+  .rail .item.active .logo i:nth-child(1){width:17px}.rail .item.active .logo i:nth-child(2){width:11px}.rail .item.active .logo i:nth-child(3){width:14px}
+  .rail .spacer{flex:1}
+
+  /* MAIN */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{padding:16px 24px 6px;flex:0 0 auto}
+  .crumb{font-size:12.5px;color:var(--text-muted);margin-bottom:8px}.crumb .now{color:var(--text-2)}
+  .titlerow{display:flex;align-items:center;gap:14px}
+  .titlerow .back{width:38px;height:38px;border-radius:50%;background:#1a1a1d;border:1px solid #2c2c31;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;cursor:pointer}
+  .titlerow h1{font-size:24px;font-weight:800;margin:0}
+  .titlerow .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .stepchip{display:flex;align-items:center;gap:9px;padding:6px 13px;border-radius:999px;background:var(--orange-tint);border:1px solid var(--orange-bd);font-size:12px;color:var(--orange-text);font-weight:700}
+  .stepchip .dot{width:6px;height:6px;border-radius:50%;background:var(--orange)}
+
+  .content{flex:1;display:flex;gap:18px;padding:10px 22px 22px;min-height:0}
+  .board{flex:0 0 340px;border:1px solid var(--border);border-radius:14px;background:var(--bg-2);overflow:hidden;display:flex;flex-direction:column}
+  .board-h{padding:14px 18px;border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text-mute);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .board-h .tag{margin-left:auto;font-size:10.5px;padding:3px 9px;border-radius:999px;background:var(--orange-tint);color:var(--orange-text);letter-spacing:0;text-transform:none;font-weight:700}
+  .board-c{flex:1;overflow-y:auto;padding:18px 18px 22px}
+  .board-c::-webkit-scrollbar{width:8px}.board-c::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+
+  .phasetit{font-size:13.5px;font-weight:800;margin:0 0 4px}
+  .phasesub{font-size:11.5px;color:var(--text-mute);margin:0 0 18px}
+  .step-block{margin-bottom:20px}
+  .step-block .sh{display:flex;gap:8px;align-items:baseline;margin-bottom:12px}
+  .step-block .sh .num{font-size:10.5px;font-weight:800;color:var(--orange-text);letter-spacing:.06em}
+  .step-block.dim .sh .num{color:var(--text-dim)}
+  .step-block .sh .tt{font-size:13px;font-weight:800}
+  .step-block.dim .sh .tt{color:var(--text-mute)}
+  .tk{position:relative;padding-left:30px;padding-bottom:14px}
+  .tk::before{content:'';position:absolute;left:11px;top:24px;bottom:0;width:1.5px;background:var(--border-hi)}
+  .tk:last-child::before{display:none}
+  .tk .node{position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--text-mute);background:var(--bg-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-mute);z-index:1}
+  .tk.done .node{background:var(--green);border-color:var(--green);color:#0c2718}
+  .tk.done .node::before{content:"✓";font-size:11px}
+  .tk.done .node .nm-i{display:none}
+  .tk.active .node{border-color:var(--orange);color:var(--orange-text);box-shadow:0 0 0 3px rgba(255,155,26,.16)}
+  .tk .nm{font-size:13px;font-weight:600;line-height:1.35;padding-top:2px;color:var(--text-2)}
+  .tk.done .nm{color:var(--text)}
+  .tk.dim .nm{color:var(--text-mute)}
+  .tk .res{font-size:12px;color:var(--green-text);margin-top:5px;font-weight:600;display:none}
+  .tk.done .res{display:block}
+  .tk .res small{display:block;color:var(--text-mute);font-weight:400;font-size:11px;margin-top:1px}
+  .tk .checks{display:flex;gap:3px;margin-top:5px;color:var(--green);font-size:11px}
+
+  /* CHAT */
+  .chatcol{flex:1;border:1px solid var(--border-hi);border-radius:14px;background:#0A0A0C;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative}
+  .cbreadcrumb{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;font-size:12px;flex:0 0 auto}
+  .cbreadcrumb .cseg{color:var(--text-2)}
+  .cbreadcrumb .cseg.now{color:var(--orange-text);font-weight:700}
+  .cbreadcrumb .csep{color:var(--text-dim)}
+  .cbreadcrumb .progress{margin-left:auto;font-size:11px;color:var(--text-muted)}
+  .cv{flex:1;overflow-y:auto;padding:22px 24px 16px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth}
+  .cv::-webkit-scrollbar{width:8px}.cv::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+
+  /* INPUT bar */
+  .minput{border-top:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:10px;flex:0 0 auto;background:var(--bg-2)}
+  .minput .ico{width:34px;height:34px;border-radius:50%;background:var(--surface-hi);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px}
+  .minput input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:13.5px;font-family:inherit}
+
+  /* ===== ONBOARDING BLOCK ===== */
+  .block{display:none;opacity:0;transform:translateY(8px);transition:opacity .35s ease,transform .35s ease}
+  .block.show{display:block;opacity:1;transform:none}
+
+  /* voice caption section */
+  .voice{background:linear-gradient(180deg,rgba(43,210,126,.05),rgba(43,210,126,.02));border:1px solid rgba(43,210,126,.22);border-left:3px solid var(--green);border-radius:12px;padding:14px 18px;max-width:780px}
+  .voice .vhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .voice .vplay{width:24px;height:24px;border-radius:50%;background:var(--green-tint);border:1px solid var(--green-bd);color:var(--green-text);display:flex;align-items:center;justify-content:center;font-size:9px;cursor:pointer;flex:0 0 24px}
+  .voice.playing .vplay{background:var(--green);color:#0c2718}
+  .voice .vlabel{font-size:10.5px;font-weight:800;color:var(--green-text);letter-spacing:.06em;text-transform:uppercase}
+  .voice .wave{display:flex;gap:2.5px;align-items:center;height:14px}
+  .voice .wave i{display:block;width:2px;height:5px;background:var(--green);border-radius:1px;opacity:.4}
+  .voice.playing .wave i{animation:wv 1s ease-in-out infinite}
+  .voice.playing .wave i:nth-child(1){animation-delay:0s}
+  .voice.playing .wave i:nth-child(2){animation-delay:.12s}
+  .voice.playing .wave i:nth-child(3){animation-delay:.24s}
+  .voice.playing .wave i:nth-child(4){animation-delay:.36s}
+  .voice.playing .wave i:nth-child(5){animation-delay:.48s}
+  @keyframes wv{0%,100%{height:5px;opacity:.4}50%{height:13px;opacity:1}}
+  .voice .vts{margin-left:auto;font-size:10.5px;color:var(--text-mute)}
+  .voice .vskip{font-size:10.5px;color:var(--text-muted);background:transparent;border:1px solid var(--border-hi);border-radius:999px;padding:3px 10px;cursor:pointer;font-family:inherit;font-weight:600}
+  .voice .vskip:hover{color:var(--text)}
+  .voice .vbody{font-size:13.5px;line-height:1.65;color:var(--text-2)}
+  .voice .vbody p{margin:0 0 9px}.voice .vbody p:last-child{margin-bottom:0}
+  .vword{color:var(--text-dim);transition:color .25s ease,text-shadow .25s ease}
+  .vword.spoken{color:var(--text-2)}
+  .vword.now{color:var(--orange-text);text-shadow:0 0 10px rgba(255,155,26,.35)}
+  .voice.done .vword{color:var(--text-2)}
+  .voice.done .vword b,.voice .vbody b{color:var(--text);font-weight:700}
+
+  /* task card (appears after voice) */
+  .qcard{margin-top:14px;background:var(--surface);border:1px solid var(--border-hi);border-radius:14px;padding:16px 18px;max-width:780px;display:none;opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s,background .25s,border-color .25s}
+  .qcard.show{display:block;opacity:1;transform:none}
+  .qcard.locked{background:rgba(43,210,126,.05);border-color:rgba(43,210,126,.32)}
+  .qcard.locked .qbody{opacity:.55;pointer-events:none}
+  .qcard.locked .qconfirm{display:none}
+  .qcard .qhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .qcard .tasknum{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--orange-text);text-transform:uppercase}
+  .qcard .tasknum .n{width:20px;height:20px;border-radius:50%;border:1px solid var(--orange-bd);background:var(--orange-tint);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--orange-text)}
+  .qcard.locked .tasknum{color:var(--green-text)}
+  .qcard.locked .tasknum .n{background:var(--green);border-color:var(--green);color:#0c2718}
+  .qcard.locked .tasknum .n::after{content:"✓"}
+  .qcard.locked .tasknum .n .raw{display:none}
+  .qcard .qkind{font-family:ui-monospace,Menlo,monospace;color:var(--text-mute);font-weight:600;font-size:10.5px;letter-spacing:.04em}
+  .qcard .answer-badge{margin-left:auto;display:none;font-size:11.5px;font-weight:700;color:var(--green-text);padding:5px 11px;background:var(--green-tint);border:1px solid var(--green-bd);border-radius:999px}
+  .qcard.locked .answer-badge{display:block}
+  .qcard.locked .edit-link{margin-left:auto;font-size:11.5px;color:var(--orange-text);cursor:pointer;font-weight:600;display:block}
+  .qcard .edit-link{display:none}
+  .qcard .qttl{font-size:15px;font-weight:700;color:var(--text);margin:8px 0 4px;line-height:1.4}
+  .qcard .qhint{font-size:11.5px;color:var(--text-mute);font-style:italic;margin:0 0 12px;line-height:1.55}
+  .qcard .qfoot{margin-top:14px;display:flex;align-items:center;gap:10px}
+  .qconfirm{padding:9px 16px;border-radius:10px;border:1px solid var(--orange);background:var(--orange);color:#1A1206;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em}
+  .qconfirm:disabled{opacity:.45;cursor:not-allowed}
+  .qconfirm.alt{background:transparent;color:var(--text-2);border-color:var(--border-hi);font-weight:600}
+  .qfoot .live-ans{font-size:12px;color:var(--text-mute)}
+
+  /* time picker */
+  .tp{display:flex;gap:10px;align-items:center;background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:12px;padding:14px 16px}
+  .tp .col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto}
+  .tp .col .stp{width:24px;height:20px;border-radius:6px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px}
+  .tp .col .stp:hover{color:var(--text);border-color:var(--text-muted)}
+  .tp .col .v{font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--text);min-width:48px;text-align:center;line-height:1}
+  .tp .col .m{font-size:10.5px;color:var(--text-mute);letter-spacing:.05em;text-transform:uppercase}
+  .tp .sep{font-size:28px;color:var(--text-dim);font-weight:300}
+  .ampm{display:flex;gap:4px;margin-left:auto}
+  .ampm button{padding:7px 14px;border-radius:8px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .ampm button.on{background:var(--orange);border-color:var(--orange);color:#1A1206}
+
+  /* chips */
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{padding:8px 13px;border-radius:999px;border:1px solid var(--border-hi);background:var(--surface-hi);color:var(--text-2);font-size:12.5px;cursor:pointer;font-family:inherit;transition:.12s}
+  .chip:hover{border-color:var(--text-muted)}
+  .chip.on{background:var(--orange);border-color:var(--orange);color:#1A1206;font-weight:700}
+
+  /* acknowledge list */
+  .alist{display:flex;flex-direction:column;gap:7px}
+  .al-item{border:1px solid var(--border-hi);background:var(--surface-hi);border-radius:11px;overflow:hidden}
+  .al-head{display:flex;align-items:center;gap:11px;padding:10px 13px;cursor:pointer}
+  .al-head .ck{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--text-mute);flex:0 0 18px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0c2718;font-weight:900}
+  .al-item.ack .al-head .ck{background:var(--green);border-color:var(--green)}
+  .al-item.ack .al-head .ck::before{content:"✓"}
+  .al-head .lbl{flex:1;font-size:13px;font-weight:600}
+  .al-head .ch{color:var(--text-dim);font-size:12px;transition:transform .2s}
+  .al-item.open .al-head .ch{transform:rotate(180deg)}
+  .al-body{display:none;padding:0 13px 12px 42px;font-size:12.5px;color:var(--text-muted);line-height:1.55}
+  .al-item.open .al-body{display:block}
+  .al-count{font-size:11.5px;color:var(--text-mute);margin-top:9px}
+  .al-count b{color:var(--green-text);font-weight:700}
+
+  /* date picker */
+  .cal{background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:13px;padding:14px;max-width:340px}
+  .cal-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:12px}
+  .cal-head .arr{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--orange-text);cursor:pointer;font-size:14px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .dow{font-size:9.5px;color:var(--text-mute);text-align:center;padding:4px 0;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+  .day{font-size:11.5px;text-align:center;padding:6px 0;border-radius:7px;color:var(--text-2);cursor:pointer}
+  .day.mute{color:var(--text-mute);opacity:.5;cursor:default}
+  .day:hover:not(.mute){background:var(--surface)}
+  .day.sel{background:var(--green);color:#0c2718;font-weight:700}
+
+  /* scaled single_choice */
+  .scaled{display:flex;flex-direction:column;gap:8px}
+  .scaled .row{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border:1px solid var(--border-hi);background:var(--surface-hi);border-radius:11px;cursor:pointer;transition:.12s}
+  .scaled .row:hover{border-color:var(--text-muted)}
+  .scaled .row.sel{border-color:var(--orange);background:var(--orange-tint)}
+  .scaled .row .rad{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--text-mute);flex:0 0 18px;margin-top:1px}
+  .scaled .row.sel .rad{border-color:var(--orange);box-shadow:inset 0 0 0 4px var(--orange)}
+  .scaled .row .txt .t{font-size:13.5px;font-weight:700;color:var(--text)}
+  .scaled .row .txt .d{font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.5}
+
+  /* slider */
+  .slider{background:var(--surface-hi);border:1px solid var(--border-hi);border-radius:12px;padding:16px}
+  .scope{display:flex;gap:6px;margin-bottom:12px}
+  .scope button{padding:6px 13px;border-radius:8px;border:1px solid var(--border-hi);background:transparent;color:var(--text-muted);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .scope button.on{background:var(--orange);border-color:var(--orange);color:#1A1206}
+  .slider-val{display:inline-flex;padding:5px 14px;border-radius:999px;background:var(--orange-tint);color:var(--orange-text);font-weight:700;font-size:13px;margin-bottom:14px}
+  .srange{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:linear-gradient(90deg,var(--orange) 0%,var(--orange) var(--p,20%),var(--surface) var(--p,20%),var(--surface) 100%);outline:none}
+  .srange::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.5),0 0 0 4px rgba(255,155,26,.25)}
+  .slider-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--text-mute);margin-top:10px}
+
+  /* begin overlay */
+  .begin-pad{padding:30px 0 18px;text-align:center}
+  .begin-pad .ttl{font-size:18px;font-weight:800;margin-bottom:6px}
+  .begin-pad .sub{font-size:12.5px;color:var(--text-muted);margin-bottom:18px}
+  .begin-btn{display:inline-flex;align-items:center;gap:9px;padding:11px 22px;border-radius:999px;background:var(--orange);border:0;color:#1A1206;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 8px 22px rgba(255,155,26,.25)}
+  .begin-btn .pl{width:18px;height:18px;border-radius:50%;background:#1A1206;color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:8px}
+
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(10px);background:#27272b;border:1px solid var(--border-hi);color:var(--text);font-size:13px;font-weight:600;padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;z-index:80}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="item"><span class="ic">⌂</span>Home</div>
+    <div class="item active"><span class="logo"><i></i><i></i><i></i></span>Project</div>
+    <div class="item"><span class="ic">⚑</span>Follow</div>
+    <div class="item"><span class="ic">⊕</span>Create</div>
+    <div class="spacer"></div>
+    <div class="item"><span class="ic">⚙</span>Settings</div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">Projects&nbsp;/&nbsp; <span class="now">Starting a Vegetable Garden</span> &nbsp;/&nbsp; <span class="now">Onboarding</span></div>
+      <div class="titlerow">
+        <div class="back">‹</div>
+        <h1>Starting a Vegetable Garden</h1>
+        <div class="right"><div class="stepchip"><span class="dot"></span><span id="chipText">Phase 1 · Milestone 1 · Step 1</span></div></div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- LEFT: Project board (Gantt-style tree) -->
+      <aside class="board">
+        <div class="board-h">Project Board <span class="tag" id="boardProg">0 / 6</span></div>
+        <div class="board-c">
+          <p class="phasetit">Phase 1 · Milestone 1</p>
+          <p class="phasesub">Project Plan</p>
+
+          <div class="step-block">
+            <div class="sh"><span class="num">STEP 1</span><span class="tt">Project Setup</span></div>
+            <div class="tk active" id="bt-t1"><span class="node">1</span><div class="nm">Daily Check-ins</div><div class="res"></div></div>
+            <div class="tk dim" id="bt-t2"><span class="node">2</span><div class="nm">The "why"</div><div class="res"></div></div>
+            <div class="tk dim" id="bt-t3"><span class="node">3</span><div class="nm">Why people quit</div><div class="res"></div></div>
+            <div class="tk dim" id="bt-t4"><span class="node">4</span><div class="nm">Deadline?</div><div class="res"></div></div>
+            <div class="tk dim" id="bt-t5"><span class="node">5</span><div class="nm">How important is this</div><div class="res"></div></div>
+            <div class="tk dim" id="bt-t6"><span class="node">6</span><div class="nm">Energy per day / week</div><div class="res"></div></div>
+          </div>
+
+          <div class="step-block dim">
+            <div class="sh"><span class="num">STEP 2</span><span class="tt">Requirements Gathering</span></div>
+            <div class="tk dim"><span class="node">·</span><div class="nm">Project Q&amp;A</div></div>
+          </div>
+
+          <div class="step-block dim">
+            <div class="sh"><span class="num">STEP 3</span><span class="tt">Resource Assessment</span></div>
+            <div class="tk dim"><span class="node">·</span><div class="nm">Skills · Tools · Materials · Budget · Risks</div></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT: Chat panel -->
+      <section class="chatcol">
+        <div class="cbreadcrumb">
+          <span class="cseg">Phase 1</span><span class="csep">›</span>
+          <span class="cseg">Milestone 1</span><span class="csep">›</span>
+          <span class="cseg now" id="cbStep">Step 1: Project Setup</span>
+          <span class="progress" id="cbProg">Task 0 of 6</span>
+        </div>
+
+        <div class="cv" id="cv">
+
+          <!-- BEGIN gate -->
+          <div class="block show" id="b-begin">
+            <div class="begin-pad">
+              <div class="ttl">Welcome to Ganttsy.</div>
+              <div class="sub">I'll guide you through setting up your first project — voice-led, ~3 min.</div>
+              <button class="begin-btn" id="beginBtn"><span class="pl">▶</span>Begin onboarding</button>
+            </div>
+          </div>
+
+          <!-- WELCOME voice -->
+          <div class="block" id="b-welcome">
+            <div class="voice">
+              <div class="vhead">
+                <span class="vplay">▶</span>
+                <span class="vlabel">Voice · Welcome</span>
+                <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
+                <span class="vts">Today 2:03pm</span>
+                <button class="vskip">Skip ▸</button>
+              </div>
+              <div class="vbody">
+                <p>Welcome to your very first project, "Starting a Vegetable Garden".</p>
+                <p>Projects don't typically succeed with just grit or discipline. They require strategy, planning and vision — and once those are established, things start coming to life.</p>
+                <p>Ok, so let's establish a few big ones up front…</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 1: Daily Check-ins (time_picker) -->
+          <div class="block" id="b-t1">
+            <div class="voice">
+              <div class="vhead">
+                <span class="vplay">▶</span><span class="vlabel">Voice · Task 1</span>
+                <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
+                <span class="vts">Today 2:03pm</span>
+                <button class="vskip">Skip ▸</button>
+              </div>
+              <div class="vbody">
+                <p>Once a day I'll be in touch about all sorts of things — daily check-ins build momentum, focus, and smooth tomorrow's tasks.</p>
+                <p>Pick the time that works best for you. We'll have our first one later today so you'll see exactly what it's about.</p>
+              </div>
+            </div>
+            <div class="qcard" data-task="t1">
+              <div class="qhead">
+                <div class="tasknum"><span class="n"><span class="raw">1</span></span>Task 1 · Daily Check-ins</div>
+                <span class="qkind">time_picker</span>
+                <span class="answer-badge" id="ans-t1"></span>
+                <span class="edit-link" data-edit="t1">Edit</span>
+              </div>
+              <h3 class="qttl">When should I check in each day?</h3>
+              <div class="qbody">
+                <div class="tp">
+                  <div class="col"><button class="stp" data-tp="h+">▲</button><div class="v" id="hr">2</div><button class="stp" data-tp="h-">▼</button><div class="m">hour</div></div>
+                  <div class="sep">:</div>
+                  <div class="col"><button class="stp" data-tp="m+">▲</button><div class="v" id="mn">03</div><button class="stp" data-tp="m-">▼</button><div class="m">min</div></div>
+                  <div class="ampm" data-ampm><button>AM</button><button class="on">PM</button></div>
+                </div>
+              </div>
+              <div class="qfoot">
+                <button class="qconfirm" data-confirm="t1">Confirm time</button>
+                <span class="live-ans" id="live-t1">2:03 PM</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 2: The WHY (multi_select) -->
+          <div class="block" id="b-t2">
+            <div class="voice">
+              <div class="vhead"><span class="vplay">▶</span><span class="vlabel">Voice · Task 2</span><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:04pm</span><button class="vskip">Skip ▸</button></div>
+              <div class="vbody">
+                <p>Now — the all-important <b>why</b>. Having a vague idea is one of the top reasons people quit.</p>
+                <p>Pick every reason you're doing this — even the ones that are only partially true.</p>
+              </div>
+            </div>
+            <div class="qcard" data-task="t2">
+              <div class="qhead">
+                <div class="tasknum"><span class="n"><span class="raw">2</span></span>Task 2 · The "WHY"</div>
+                <span class="qkind">multi_select</span>
+                <span class="answer-badge" id="ans-t2"></span>
+                <span class="edit-link" data-edit="t2">Edit</span>
+              </div>
+              <h3 class="qttl">Why are you doing this project?</h3>
+              <p class="qhint">Pick as many as apply.</p>
+              <div class="qbody">
+                <div class="chips" data-multi="t2">
+                  <button class="chip">Grow my own food</button>
+                  <button class="chip">Spend more time outdoors</button>
+                  <button class="chip">Save money on groceries</button>
+                  <button class="chip">Teach my kids</button>
+                  <button class="chip">A relaxing hobby</button>
+                  <button class="chip">Eat healthier</button>
+                  <button class="chip">Reduce waste</button>
+                  <button class="chip">Pollinator-friendly garden</button>
+                  <button class="chip">Curb appeal</button>
+                  <button class="chip">Self-sufficiency</button>
+                  <button class="chip">Something else</button>
+                </div>
+              </div>
+              <div class="qfoot">
+                <button class="qconfirm" data-confirm="t2" disabled>Confirm reasons</button>
+                <span class="live-ans" id="live-t2">Pick at least one</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 3: Why People Quit (acknowledge_list) -->
+          <div class="block" id="b-t3">
+            <div class="voice">
+              <div class="vhead"><span class="vplay">▶</span><span class="vlabel">Voice · Task 3</span><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:04pm</span><button class="vskip">Skip ▸</button></div>
+              <div class="vbody">
+                <p>To succeed, you need to understand what stands in the way. Tap each reason to acknowledge — we'll be on guard for all of them.</p>
+                <p>We already nailed a big one in Task 2 — the <b>why</b>. Here are the rest.</p>
+              </div>
+            </div>
+            <div class="qcard" data-task="t3">
+              <div class="qhead">
+                <div class="tasknum"><span class="n"><span class="raw">3</span></span>Task 3 · Why People Quit</div>
+                <span class="qkind">acknowledge_list</span>
+                <span class="answer-badge" id="ans-t3"></span>
+                <span class="edit-link" data-edit="t3">Edit</span>
+              </div>
+              <h3 class="qttl">Acknowledge each obstacle</h3>
+              <div class="qbody">
+                <div class="alist" data-alist="t3">
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Lack of clear goals</span><span class="ch">⌄</span></div><div class="al-body">Vague start, no finish line. Without something concrete to aim at, drift wins.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Poor planning</span><span class="ch">⌄</span></div><div class="al-body">Underestimated time, money, or effort — the project hits an early wall and stalls.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Loss of motivation</span><span class="ch">⌄</span></div><div class="al-body">Excitement fades after the initial push. Daily check-ins are designed to counter exactly this.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Competing priorities</span><span class="ch">⌄</span></div><div class="al-body">Life, work, or family demands take over. Energy budget keeps it sustainable.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Resource constraints</span><span class="ch">⌄</span></div><div class="al-body">Funding, tools, or people unavailable — we'll inventory all of this in Step 3.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Skill gaps</span><span class="ch">⌄</span></div><div class="al-body">The project needs abilities you don't have yet. We'll surface these and find help.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Fear of failure</span><span class="ch">⌄</span></div><div class="al-body">Avoidance when results feel uncertain. Small wins reframe the whole arc.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Perfectionism</span><span class="ch">⌄</span></div><div class="al-body">Endless tweaking, never calling it done. "Good enough" ships.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Weak accountability</span><span class="ch">⌄</span></div><div class="al-body">No deadlines or external pressure. We'll set one in Task 4.</div></div>
+                  <div class="al-item"><div class="al-head"><span class="ck"></span><span class="lbl">Scope creep</span><span class="ch">⌄</span></div><div class="al-body">Project keeps expanding beyond control. We'll define a clear scope and protect it.</div></div>
+                </div>
+                <div class="al-count"><b id="ackCount">0</b> / 10 acknowledged</div>
+              </div>
+              <div class="qfoot">
+                <button class="qconfirm" data-confirm="t3">Confirm — I see them all</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 4: Deadline (date_picker) -->
+          <div class="block" id="b-t4">
+            <div class="voice">
+              <div class="vhead"><span class="vplay">▶</span><span class="vlabel">Voice · Task 4</span><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:05pm</span><button class="vskip">Skip ▸</button></div>
+              <div class="vbody">
+                <p>Now — accountability. Deadlines force focus. Pick a target date for when this project should be done.</p>
+                <p>Don't overthink it. You can always adjust later if life happens.</p>
+              </div>
+            </div>
+            <div class="qcard" data-task="t4">
+              <div class="qhead">
+                <div class="tasknum"><span class="n"><span class="raw">4</span></span>Task 4 · Deadline</div>
+                <span class="qkind">date_picker</span>
+                <span class="answer-badge" id="ans-t4"></span>
+                <span class="edit-link" data-edit="t4">Edit</span>
+              </div>
+              <h3 class="qttl">When should this project be done?</h3>
+              <div class="qbody">
+                <div class="cal">
+                  <div class="cal-head"><span class="arr">‹</span><span>October 2026</span><span class="arr">›</span></div>
+                  <div class="cal-grid" id="cal">
+                    <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+                  </div>
+                </div>
+              </div>
+              <div class="qfoot">
+                <button class="qconfirm" data-confirm="t4" disabled>Confirm deadline</button>
+                <span class="live-ans" id="live-t4">Pick a date</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 5: How Important (scaled single_choice) -->
+          <div class="block" id="b-t5">
+            <div class="voice">
+              <div class="vhead"><span class="vplay">▶</span><span class="vlabel">Voice · Task 5</span><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:05pm</span><button class="vskip">Skip ▸</button></div>
+              <div class="vbody">
+                <p>Different projects matter to different degrees. Be honest — this calibrates how hard I'll push you on the rough days.</p>
+              </div>
+            </div>
+            <div class="qcard" data-task="t5">
+              <div class="qhead">
+                <div class="tasknum"><span class="n"><span class="raw">5</span></span>Task 5 · How important is this?</div>
+                <span class="qkind">single_choice</span>
+                <span class="answer-badge" id="ans-t5"></span>
+                <span class="edit-link" data-edit="t5">Edit</span>
+              </div>
+              <h3 class="qttl">How important is this project to you?</h3>
+              <div class="qbody">
+                <div class="scaled" data-scaled="t5">
+                  <div class="row" data-val="1 — Not important"><span class="rad"></span><div class="txt"><div class="t">1 — Not important</div><div class="d">Finishing is optional; the value is mostly in exploring or testing.</div></div></div>
+                  <div class="row" data-val="2 — Mildly important"><span class="rad"></span><div class="txt"><div class="t">2 — Mildly important</div><div class="d">Completion is nice-to-have but the project still delivers learning or insight without it.</div></div></div>
+                  <div class="row" data-val="3 — Moderately important"><span class="rad"></span><div class="txt"><div class="t">3 — Moderately important</div><div class="d">Finishing matters, but partial progress still yields meaningful benefit.</div></div></div>
+                  <div class="row" data-val="4 — Very important"><span class="rad"></span><div class="txt"><div class="t">4 — Very important</div><div class="d">The project's value is largely tied to reaching the end-state.</div></div></div>
+                  <div class="row" data-val="5 — Critical"><span class="rad"></span><div class="txt"><div class="t">5 — Critical</div><div class="d">Failure to complete defeats the entire purpose of the project.</div></div></div>
+                </div>
+              </div>
+              <div class="qfoot">
+                <button class="qconfirm" data-confirm="t5" disabled>Confirm</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASK 6: Energy (slider) -->
+          <div class="block" id="b-t6">
+            <div class="voice">
+              <div class="vhead"><span class="vplay">▶</span><span class="vlabel">Voice · Task 6</span><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:06pm</span><button class="vskip">Skip ▸</button></div>
+              <div class="vbody">
+                <p>Last one. How much energy do you want to put into this — per day, or per week? Be realistic.</p>
+                <p>This protects the project from burnout and competing priorities. We'll plan tasks within this budget.</p>
+              </div>
+            </div>
+            <div class="qcard" data-task="t6">
+              <div class="qhead">
+                <div class="tasknum"><span class="n"><span class="raw">6</span></span>Task 6 · Energy budget</div>
+                <span class="qkind">slider</span>
+                <span class="answer-badge" id="ans-t6"></span>
+                <span class="edit-link" data-edit="t6">Edit</span>
+              </div>
+              <h3 class="qttl">How much time can you devote?</h3>
+              <div class="qbody">
+                <div class="slider">
+                  <div class="scope" data-scope><button class="on">Per day</button><button>Per week</button></div>
+                  <div class="slider-val" id="energyVal">2 hours / day</div>
+                  <input type="range" min="0.5" max="8" step="0.5" value="2" class="srange" id="energy" />
+                  <div class="slider-ends"><span>30 min</span><span>8 hrs</span></div>
+                </div>
+              </div>
+              <div class="qfoot">
+                <button class="qconfirm" data-confirm="t6">Confirm energy</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 1 CLOSE voice -->
+          <div class="block" id="b-close">
+            <div class="voice">
+              <div class="vhead"><span class="vplay">▶</span><span class="vlabel">Voice · Step 1 complete</span><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span class="vts">Today 2:07pm</span><button class="vskip">Skip ▸</button></div>
+              <div class="vbody">
+                <p>Beautiful — Step 1 done. Remember, if you get stuck on any one thing, I can always look for outside help to get us over the hump. I can find Domain Advisers, even gardeners who'll come out for a day to assist or confirm you're on the right track. I can source equipment lists, materials, and local places to get them from — even the deals they're running.</p>
+                <p><b>No matter what — if you want this to work, it's safe to say we'll make it work. That's just the reality.</b></p>
+              </div>
+            </div>
+            <div class="qcard show" style="background:transparent;border-color:transparent;padding:14px 0">
+              <div class="qfoot">
+                <button class="qconfirm">Continue to Step 2 — Requirements →</button>
+                <span class="live-ans">Step 2 &amp; 3 coming in next iteration</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="minput">
+          <div class="ico">＋</div>
+          <input placeholder="Type a message or just listen…" />
+          <div class="ico">🎙</div>
+          <div class="ico">➤</div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="toast"></div>
+
+<script>
+  function toast(t){const el=document.querySelector('.toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1600);}
+
+  /* ===== build word spans inside every voice .vbody ===== */
+  document.querySelectorAll('.voice .vbody').forEach(body=>{
+    body.querySelectorAll('p').forEach(p=>{
+      const html=p.innerHTML;
+      // tokenize across html, preserving inline <b>
+      const wrapper=document.createElement('span');
+      wrapper.innerHTML=html;
+      const out=document.createDocumentFragment();
+      const walk=(node)=>{
+        if(node.nodeType===3){
+          const parts=node.textContent.split(/(\s+)/);
+          parts.forEach(part=>{
+            if(/^\s+$/.test(part)){out.appendChild(document.createTextNode(part));}
+            else if(part.length){const s=document.createElement('span');s.className='vword';s.textContent=part;out.appendChild(s);}
+          });
+        } else if(node.nodeType===1){
+          // unwrap inline tag, mark all child words with .bld
+          const wasBold=node.tagName==='B';
+          node.childNodes.forEach(ch=>{
+            if(ch.nodeType===3){
+              const parts=ch.textContent.split(/(\s+)/);
+              parts.forEach(part=>{
+                if(/^\s+$/.test(part)){out.appendChild(document.createTextNode(part));}
+                else if(part.length){const b=document.createElement(wasBold?'b':'span');b.className='vword';b.textContent=part;out.appendChild(b);}
+              });
+            } else walk(ch);
+          });
+        }
+      };
+      wrapper.childNodes.forEach(walk);
+      p.innerHTML='';p.appendChild(out);
+    });
+  });
+
+  /* ===== voice playback ===== */
+  const WORD_MS=140;
+  let activeAbort=null;
+
+  function playVoice(voiceEl){
+    return new Promise(resolve=>{
+      voiceEl.classList.add('playing');
+      voiceEl.classList.remove('done');
+      const words=Array.from(voiceEl.querySelectorAll('.vword'));
+      let i=0,aborted=false;
+      activeAbort={abort:()=>{aborted=true;words.forEach(w=>{w.classList.add('spoken');w.classList.remove('now');});finish();}};
+      const finish=()=>{voiceEl.classList.remove('playing');voiceEl.classList.add('done');activeAbort=null;resolve();};
+      const tick=()=>{
+        if(aborted) return;
+        if(i>0) words[i-1].classList.remove('now');
+        if(i>=words.length){return finish();}
+        words[i].classList.add('spoken','now');
+        // auto-scroll
+        if(i%6===0){const cv=document.getElementById('cv');cv.scrollTo({top:cv.scrollHeight,behavior:'smooth'});}
+        i++;
+        setTimeout(tick,WORD_MS);
+      };
+      tick();
+    });
+  }
+
+  /* skip button per voice block */
+  document.querySelectorAll('.voice .vskip').forEach(b=>b.addEventListener('click',()=>{if(activeAbort)activeAbort.abort();}));
+  document.querySelectorAll('.voice .vplay').forEach(b=>b.addEventListener('click',e=>{
+    const v=b.closest('.voice');
+    // re-play
+    v.querySelectorAll('.vword').forEach(w=>{w.classList.remove('spoken','now');});
+    playVoice(v);
+  }));
+
+  /* ===== sequence ===== */
+  const SEQ=['welcome','t1','t2','t3','t4','t5','t6','close'];
+  let curIdx=-1;
+  function show(id){
+    const el=document.getElementById('b-'+id);
+    el.classList.add('show');
+    setTimeout(()=>{el.scrollIntoView({behavior:'smooth',block:'start'});},80);
+  }
+  async function step(){
+    curIdx++;
+    if(curIdx>=SEQ.length) return;
+    const id=SEQ[curIdx];
+    const el=document.getElementById('b-'+id);
+    show(id);
+    const voiceEl=el.querySelector('.voice');
+    if(voiceEl) await playVoice(voiceEl);
+    const card=el.querySelector('.qcard');
+    if(card){
+      setTimeout(()=>{
+        card.classList.add('show');
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+      },200);
+    } else {
+      // no card → auto advance
+      setTimeout(step,500);
+    }
+  }
+
+  document.getElementById('beginBtn').addEventListener('click',()=>{
+    document.getElementById('b-begin').classList.remove('show');
+    document.getElementById('b-begin').style.display='none';
+    step();
+  });
+
+  /* ===== TASK 1: time picker ===== */
+  const hrEl=document.getElementById('hr'),mnEl=document.getElementById('mn');
+  function timeStr(){const ampm=document.querySelector('[data-ampm] button.on').textContent;return `${parseInt(hrEl.textContent)}:${mnEl.textContent.padStart(2,'0')} ${ampm}`;}
+  function updT1(){document.getElementById('live-t1').textContent=timeStr();}
+  document.querySelectorAll('[data-tp]').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.tp;
+    if(k==='h+'){let h=parseInt(hrEl.textContent);h=h>=12?1:h+1;hrEl.textContent=h;}
+    if(k==='h-'){let h=parseInt(hrEl.textContent);h=h<=1?12:h-1;hrEl.textContent=h;}
+    if(k==='m+'){let m=parseInt(mnEl.textContent);m=(m+5)%60;mnEl.textContent=m.toString().padStart(2,'0');}
+    if(k==='m-'){let m=parseInt(mnEl.textContent);m=(m-5+60)%60;mnEl.textContent=m.toString().padStart(2,'0');}
+    updT1();
+  }));
+  document.querySelectorAll('[data-ampm] button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-ampm] button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');updT1();
+  }));
+
+  /* ===== TASK 2: multi chips ===== */
+  document.querySelectorAll('[data-multi]').forEach(g=>{
+    const tid=g.dataset.multi;
+    const confirmBtn=document.querySelector(`[data-confirm="${tid}"]`);
+    const live=document.getElementById('live-'+tid);
+    g.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+      c.classList.toggle('on');
+      const picks=Array.from(g.querySelectorAll('.chip.on')).map(x=>x.textContent.trim());
+      confirmBtn.disabled=picks.length===0;
+      live.textContent=picks.length?`${picks.length} selected`:'Pick at least one';
+    }));
+  });
+
+  /* ===== TASK 3: acknowledge list ===== */
+  document.querySelectorAll('[data-alist]').forEach(g=>{
+    const tid=g.dataset.alist;
+    const cnt=document.getElementById('ackCount');
+    g.querySelectorAll('.al-item').forEach(it=>{
+      it.querySelector('.al-head').addEventListener('click',e=>{
+        if(e.target.classList.contains('ck')) return;
+        it.classList.toggle('open');
+      });
+      it.querySelector('.ck').addEventListener('click',e=>{
+        e.stopPropagation();
+        it.classList.toggle('ack');
+        cnt.textContent=g.querySelectorAll('.al-item.ack').length;
+      });
+    });
+  });
+
+  /* ===== TASK 4: calendar (Oct 1, 2026 = Thursday) ===== */
+  const cal=document.getElementById('cal');
+  let selectedDate=null;
+  const confirmT4=document.querySelector('[data-confirm="t4"]');
+  const liveT4=document.getElementById('live-t4');
+  // Sept tail
+  [27,28,29,30].forEach(d=>{const e=document.createElement('div');e.className='day mute';e.textContent=d;cal.appendChild(e);});
+  for(let d=1;d<=31;d++){
+    const e=document.createElement('div');e.className='day';e.textContent=d;
+    e.addEventListener('click',()=>{
+      cal.querySelectorAll('.day.sel').forEach(x=>x.classList.remove('sel'));
+      e.classList.add('sel');
+      selectedDate=`October ${d}, 2026`;
+      liveT4.textContent=selectedDate;
+      confirmT4.disabled=false;
+    });
+    cal.appendChild(e);
+  }
+  for(let d=1;d<=6;d++){const e=document.createElement('div');e.className='day mute';e.textContent=d;cal.appendChild(e);}
+
+  /* ===== TASK 5: scaled ===== */
+  document.querySelectorAll('[data-scaled]').forEach(g=>{
+    const tid=g.dataset.scaled;
+    const confirmBtn=document.querySelector(`[data-confirm="${tid}"]`);
+    g.querySelectorAll('.row').forEach(r=>r.addEventListener('click',()=>{
+      g.querySelectorAll('.row').forEach(x=>x.classList.remove('sel'));
+      r.classList.add('sel');
+      confirmBtn.disabled=false;
+    }));
+  });
+
+  /* ===== TASK 6: slider ===== */
+  const en=document.getElementById('energy'),ev=document.getElementById('energyVal');
+  function upd6(){const v=en.value;const u=document.querySelector('[data-scope] button.on')?.textContent.replace('Per ','/').trim()||'/day';ev.textContent=v+' hours '+u;en.style.setProperty('--p',((v-0.5)/(8-0.5)*100)+'%');}
+  en.addEventListener('input',upd6);upd6();
+  document.querySelectorAll('[data-scope] button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-scope] button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');upd6();
+  }));
+
+  /* ===== CONFIRM handlers (lock card, update board, advance) ===== */
+  function lockAndAdvance(tid, ansText, boardResultHtml){
+    const card=document.querySelector(`.qcard[data-task="${tid}"]`);
+    card.classList.add('locked');
+    document.getElementById('ans-'+tid).textContent=ansText;
+    // board
+    const bt=document.getElementById('bt-'+tid);
+    bt.classList.remove('active','dim');bt.classList.add('done');
+    bt.querySelector('.res').innerHTML=boardResultHtml;
+    // next board node active
+    const next=document.getElementById('bt-'+nextTaskOf(tid));
+    if(next){next.classList.remove('dim');next.classList.add('active');}
+    // progress
+    const done=document.querySelectorAll('.tk.done').length;
+    document.getElementById('boardProg').textContent=`${done} / 6`;
+    document.getElementById('cbProg').textContent=`Task ${done} of 6`;
+    setTimeout(step,400);
+  }
+  function nextTaskOf(tid){const n=parseInt(tid.slice(1));return n<6?('t'+(n+1)):null;}
+
+  document.querySelector('[data-confirm="t1"]').addEventListener('click',()=>{
+    const t=timeStr();lockAndAdvance('t1',t,`Daily check-in @ ${t}`);
+  });
+  document.querySelector('[data-confirm="t2"]').addEventListener('click',()=>{
+    const picks=Array.from(document.querySelectorAll('[data-multi="t2"] .chip.on')).map(x=>x.textContent.trim());
+    const summary=picks.length>3?`${picks.slice(0,3).join(' · ')} +${picks.length-3}`:picks.join(' · ');
+    lockAndAdvance('t2',`${picks.length} reasons`,summary||'—');
+  });
+  document.querySelector('[data-confirm="t3"]').addEventListener('click',()=>{
+    const n=document.querySelectorAll('[data-alist="t3"] .al-item.ack').length;
+    const checks='✓'.repeat(Math.min(n,10));
+    lockAndAdvance('t3',`${n}/10 acknowledged`,`<span style="color:var(--green);font-size:11px">${checks||'noted'}</span>`);
+  });
+  document.querySelector('[data-confirm="t4"]').addEventListener('click',()=>{
+    lockAndAdvance('t4',selectedDate,selectedDate);
+  });
+  document.querySelector('[data-confirm="t5"]').addEventListener('click',()=>{
+    const sel=document.querySelector('[data-scaled="t5"] .row.sel');
+    const val=sel.dataset.val;
+    const desc=sel.querySelector('.d').textContent;
+    lockAndAdvance('t5',val,`${val}<small>${desc}</small>`);
+  });
+  document.querySelector('[data-confirm="t6"]').addEventListener('click',()=>{
+    const v=ev.textContent;lockAndAdvance('t6',v,v);
+  });
+
+  /* edit links — for now just unlock card visually */
+  document.querySelectorAll('.edit-link').forEach(e=>e.addEventListener('click',()=>{
+    const tid=e.dataset.edit;
+    const card=document.querySelector(`.qcard[data-task="${tid}"]`);
+    card.classList.remove('locked');
+    toast('Editing — confirm again to lock in');
+  }));
+  document.querySelectorAll('.minput .ico').forEach(i=>i.addEventListener('click',()=>toast('Chat input')));
+  document.querySelectorAll('.rail .item').forEach(it=>it.addEventListener('click',()=>{document.querySelectorAll('.rail .item').forEach(x=>x.classList.remove('active'));it.classList.add('active');}));
+</script>
+</body>
+</html>
