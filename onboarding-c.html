@@ -399,10 +399,10 @@
               <div class="glabel"><div class="pn">Phase 01:</div><div class="pn">Project Plan</div><div class="pf" id="pfTxt">0 / 3</div></div>
               <div class="gtrack tinted-o" style="min-height:170px;">
                 <div class="today-line" style="left:4%;"></div>
-                <div class="gbar ms" id="msBar" style="left:2%; width:32%; top:12px;"><span class="mchev">⌄</span><span class="pct" id="msPct">0%</span><span class="nm">Milestone 1 · 0 / 3</span><span class="dia"></span></div>
-                <div class="gbar prog" id="gbarS1" style="left:2%; width:14%; top:54px;"><span class="pct" id="gbarS1pct">0%</span><span class="nm">Step 1 · Setup</span></div>
-                <div class="gbar pending" id="gbarS2" style="left:13%; width:14%; top:92px;"><span class="pct" id="gbarS2pct">0%</span><span class="nm">Step 2 · Requirements</span></div>
-                <div class="gbar pending" id="gbarS3" style="left:24%; width:14%; top:130px;"><span class="pct" id="gbarS3pct">0%</span><span class="nm">Step 3 · Resources</span></div>
+                <div class="gbar ms" id="msBar" style="left:2%; width:32%; top:12px;"><span class="mchev">⌄</span><span class="pct" id="msPct">0%</span><span class="nm">Milestone 1 · Step 1 · 0 / 3</span><span class="dia"></span></div>
+                <div class="gbar prog" id="gbarS1" style="left:2%; width:14%; top:54px;"><span class="pct" id="gbarS1pct">0%</span><span class="nm">Task 01 · Project Setup</span></div>
+                <div class="gbar pending" id="gbarS2" style="left:13%; width:14%; top:92px;"><span class="pct" id="gbarS2pct">0%</span><span class="nm">Task 02 · Requirements</span></div>
+                <div class="gbar pending" id="gbarS3" style="left:24%; width:14%; top:130px;"><span class="pct" id="gbarS3pct">0%</span><span class="nm">Task 03 · Resources</span></div>
               </div>
             </div>
             <div class="grow">
@@ -431,7 +431,8 @@
         <div class="crumbs">
           <span class="seg">Phase 1</span><span class="sep">›</span>
           <span class="seg">Milestone 1</span><span class="sep">›</span>
-          <span class="seg now" id="crumbStep">Step 1: Project Setup</span>
+          <span class="seg">Step 1</span><span class="sep">›</span>
+          <span class="seg now" id="crumbStep">Task 01</span>
           <span class="progtxt" id="cbProg">0 / 6</span>
         </div>
 
@@ -1135,10 +1136,10 @@
     document.getElementById('stepName').textContent=phase+(nm&&stepEl.dataset.kind==='q'?(' · '+nm):'');
     document.getElementById('stepMeta').style.display=s==='begin'?'none':'flex';
 
-    // crumb step
-    if(s.startsWith('s2-')) document.getElementById('crumbStep').textContent='Step 2: Requirements Gathering';
-    else if(s.startsWith('s3-')) document.getElementById('crumbStep').textContent='Step 3: Resource Assessment';
-    else document.getElementById('crumbStep').textContent='Step 1: Project Setup';
+    // crumb task (Phase 1 > Milestone 1 > Step 1 > Task 0N)
+    if(s.startsWith('s2-')) document.getElementById('crumbStep').textContent='Task 02';
+    else if(s.startsWith('s3-')) document.getElementById('crumbStep').textContent='Task 03';
+    else document.getElementById('crumbStep').textContent='Task 01';
   }
 
   async function go(id){
