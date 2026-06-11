@@ -1,0 +1,1900 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganttsy · Grouping A — Multi-select</title>
+<style>
+  :root{
+    --bg:#0E0E10;--bg-2:#0B0B0D;--panel:#141416;--surface:#1C1C1F;--surface-hi:#242428;
+    --border:#262629;--border-hi:#34343a;
+    --text:#ECECEE;--text-2:#C7C7CD;--text-muted:#8C8C94;--text-dim:#5d5d65;--text-mute:#7d7d85;
+    --orange:#FF9B1A;--orange-text:#FFB658;--orange-tint:rgba(255,155,26,.12);--orange-bd:rgba(255,155,26,.42);
+    --green:#2BD27E;--green-text:#52DDA1;--green-tint:rgba(43,210,126,.12);--green-bd:rgba(43,210,126,.4);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;background:#070708;color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden}
+  .variant-tag{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#141416;border:1px solid var(--border-hi);color:var(--orange-text);font-size:11.5px;font-weight:700;padding:6px 16px;border-radius:999px;z-index:100;letter-spacing:.06em}
+  .variant-tag a{color:var(--text-muted);text-decoration:none;margin:0 8px;font-weight:600}
+  .variant-tag a.on{color:var(--orange-text)}
+
+  /* APP SHELL */
+  .app{display:flex;height:100vh;width:100vw;background:#070708}
+  .rail{width:84px;background:#0a0a0c;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:22px 0;gap:6px;flex:0 0 84px}
+  .rail .item{width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0;border-radius:12px;color:var(--text-muted);font-size:10.5px;cursor:pointer}
+  .rail .item .ic{font-size:17px}
+  .rail .item.active{background:var(--orange-tint);color:var(--orange-text)}
+  .rail .item.active .logo{display:flex;flex-direction:column;gap:2.5px;align-items:center}
+  .rail .item.active .logo i{display:block;height:3px;border-radius:2px;background:var(--orange)}
+  .rail .item.active .logo i:nth-child(1){width:17px}
+  .rail .item.active .logo i:nth-child(2){width:11px}
+  .rail .item.active .logo i:nth-child(3){width:14px}
+  .rail .spacer{flex:1}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+  .topbar{padding:18px 28px 6px;flex:0 0 auto}
+  .crumb{font-size:12.5px;color:var(--text-muted);margin-bottom:10px}
+  .crumb .now{color:var(--text-2)}
+  .titlerow{display:flex;align-items:center;gap:16px}
+  .titlerow .back{width:44px;height:44px;border-radius:50%;background:#1a1a1d;border:1px solid #2c2c31;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;cursor:pointer}
+  .titlerow h1{font-size:30px;font-weight:800;margin:0;letter-spacing:-.01em}
+  .content{flex:1;display:flex;gap:22px;padding:14px 28px 28px;min-height:0;position:relative}
+
+  /* PROJECT BOARD (left) */
+  .board{flex:3 1 0;min-width:0;min-height:0;border:1px solid var(--border);border-radius:14px;background:#0a0a0c;display:flex;flex-direction:column;overflow:hidden}
+  .btoolbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .btoolbar .backg{color:var(--orange-text);font-weight:700;font-size:13px;cursor:pointer}
+  .btoolbar .sp{flex:1}
+  .btoolbar .today{padding:8px 16px;border:1px solid var(--orange-bd);color:var(--text);background:transparent;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .btoolbar .zbtn{width:32px;height:32px;border:1px solid var(--border-hi);background:transparent;border-radius:8px;color:var(--text-2);cursor:pointer;font-family:inherit;font-size:14px;font-weight:700}
+  .bscroll{flex:1;overflow:auto;padding:18px}
+  .bscroll::-webkit-scrollbar{width:8px}
+  .bscroll::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+
+  .pcard{display:flex;border:1px solid var(--border-hi);border-radius:14px;overflow:hidden;background:var(--surface);margin-bottom:18px;position:relative}
+  .pcard .pimg{width:128px;flex:0 0 128px;background:radial-gradient(circle at 40% 40%,#2680b3,#0a334a);position:relative}
+  .pcard .pimg::after{content:'🐢';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px}
+  .pcard .pbody{flex:1;padding:16px 18px}
+  .pcard h2{font-size:18px;font-weight:800;margin:0 0 10px;line-height:1.2}
+  .pcard .viewrow{display:flex;align-items:center;gap:10px}
+  .pcard .shareb{width:28px;height:28px;border-radius:7px;background:var(--orange-tint);border:1px solid var(--orange-bd);display:flex;align-items:center;justify-content:center;color:var(--orange-text);font-size:13px;cursor:pointer}
+  .pcard .viewmore{color:var(--orange-text);font-weight:700;text-decoration:underline;font-size:12.5px;cursor:pointer}
+  .pcard .ptl{position:absolute;left:0;right:0;bottom:0;height:5px;background:#2a2118}
+  .pcard .ptl .fill{position:absolute;left:0;top:0;bottom:0;width:60%;background:var(--orange)}
+  .pcard .ptl .d{position:absolute;top:-2px;width:8px;height:8px;background:var(--orange);transform:rotate(45deg);box-shadow:0 0 0 2px #0a0a0c}
+
+  .gantt{border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:0}
+  .ghead{display:grid;grid-template-columns:170px repeat(4,1fr);border-bottom:1px solid var(--border)}
+  .ghead .mon{grid-column:2/-1;padding:9px 12px;font-size:12.5px;font-weight:700;border-bottom:1px solid var(--border)}
+  .ghead .corner{grid-row:1/3;border-right:1px solid var(--border)}
+  .ghead .wk{padding:8px 11px;font-size:11px;color:var(--text-muted);text-align:center;border-right:1px solid var(--border)}
+  .ghead .wk:last-child{border-right:0}
+  .grow{display:grid;grid-template-columns:170px 1fr;border-bottom:1px solid var(--border)}
+  .grow:last-child{border-bottom:0}
+  .glabel{padding:14px 12px;border-right:1px solid var(--border);font-size:12px}
+  .glabel .pn{font-weight:700;line-height:1.3}
+  .glabel .pf{color:var(--text-muted);font-size:11px;margin-top:4px}
+  .gtrack{position:relative;padding:11px 0;min-height:90px}
+  .gtrack.tinted-g{background:rgba(43,210,126,.05)}
+  .gtrack.tinted-o{background:rgba(255,155,26,.05)}
+  .today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--orange);opacity:.7;z-index:2}
+  .gbar{position:absolute;height:22px;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:11px;white-space:nowrap;overflow:hidden}
+  .gbar .pct{font-weight:800;margin-right:5px}
+  .gbar .nm{color:var(--text-muted)}
+  .gbar.done{background:transparent;border:1.5px solid var(--green);color:var(--green-text)}
+  .gbar.done .pct{color:var(--green-text)}
+  .gbar.prog{background:transparent;border:1.5px solid var(--orange);color:var(--orange-text)}
+  .gbar.prog .pct{color:var(--orange-text)}
+  .gbar.ms{height:26px}
+  .gbar.ms .mchev{margin-right:6px}
+
+  /* CHAT SHELL wraps chat + sales-nav so they share one rounded outer box */
+  .chat-shell{flex:2 1 0;min-width:0;min-height:0;display:flex;border:1px solid var(--border-hi);border-radius:14px;background:#0A0A0C;overflow:hidden}
+  .content.sn-open .chat-shell{flex:3.4 1 0}
+  .content.sn-open .board{flex:1.4 1 0;opacity:.45;filter:grayscale(.25);transition:flex .3s,opacity .3s,filter .3s}
+
+  /* CHAT PANEL (now inside the shell) */
+  .chatcol{flex:1 1 0;min-width:0;min-height:0;background:transparent;display:flex;flex-direction:column;overflow:hidden;position:relative;border:0;border-radius:0}
+  .chead{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px}
+  .chead .ci{width:36px;height:36px;border-radius:9px;background:radial-gradient(circle at 40% 40%,#1f5e6e,#0c2730);position:relative}
+  .chead .ci::after{content:'🌱';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:17px}
+  .chead .ct{flex:1}.chead .ct .t1{font-size:15px;font-weight:700}
+  .ring{--p:80;width:36px;height:36px;border-radius:50%;position:relative;background:conic-gradient(var(--orange) calc(var(--p)*1%),rgba(255,255,255,.09) 0)}
+  .ring::after{content:'';position:absolute;inset:3.5px;border-radius:50%;background:var(--bg-2)}
+  .ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--orange-text);z-index:1}
+
+  .crumbs{display:flex;align-items:center;gap:8px;background:var(--bg-2);padding:11px 18px;border-bottom:1px solid var(--border);font-size:12px}
+  .crumbs .seg{color:var(--text-2)}.crumbs .seg.now{color:var(--orange-text);font-weight:700}
+  .crumbs .sep{color:var(--text-dim)}
+  .crumbs .cchev{margin-left:auto;color:var(--text-mute);font-size:13px}
+
+  .chat-scroll{flex:1;overflow-y:auto;padding:14px 18px 18px;display:flex;flex-direction:column}
+  /* Hide the old onboarding demo content — chat is empty by default */
+  .chat-scroll .milestone-card,.chat-scroll .step-wrap{display:none}
+  /* Banner pins to the top, content flows below */
+  .chat-scroll .req-banner-row{flex:0 0 auto}
+  /* Post-start holds the conv; margin-top:auto pushes it down while still allowing scroll */
+  .chat-scroll .post-start{display:none;flex-direction:column;margin-top:auto}
+  .chat-scroll.started .post-start{display:flex}
+  /* Start-phase fills remaining space when chat hasn't started */
+  .chat-scroll .start-phase{flex:1}
+  .chat-scroll::-webkit-scrollbar{width:8px}.chat-scroll::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+
+  .milestone-card{background:var(--surface);border:1px solid var(--border-hi);border-radius:10px;padding:13px 15px;margin-bottom:14px}
+  .milestone-card .mn{font-size:13px;font-weight:700;display:flex;align-items:center}
+  .milestone-card .mn .pchev{margin-left:auto;color:var(--orange-text);font-size:13px}
+  .milestone-card .md{font-size:11.5px;color:var(--text-muted);margin-top:6px;line-height:1.5}
+
+  .step-onboard{border:1.5px solid var(--orange);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px;background:rgba(255,155,26,.03)}
+  .step-onboard .so-info{flex:1}
+  .step-onboard .so-title{font-size:15px;font-weight:800;color:var(--text)}
+  .step-onboard .so-title b{font-weight:700;color:var(--text-2)}
+  .step-onboard .so-sub{font-size:11.5px;color:var(--text-muted);margin-top:4px;line-height:1.45}
+  .step-onboard .pchev{color:var(--text-muted);font-size:13px;cursor:pointer}
+
+  .step-wrap{position:relative;margin-top:6px}
+  .tasks-wrap{position:relative;padding-left:24px;margin-top:6px}
+  .tasks-wrap::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:1.5px;background:#3f3f47;z-index:0}
+
+  .task-block{margin-bottom:14px;position:relative}
+  .task-head{display:flex;align-items:center;gap:10px;padding:6px 0 10px;cursor:pointer;position:relative}
+  .task-head .tmark{width:14px;height:14px;background:var(--green);border-radius:2px;flex:0 0 14px;position:absolute;left:-17px;top:11px;box-shadow:0 0 0 4px #0A0A0C}
+  .task-head .tname{font-size:15.5px;font-weight:800}
+  .task-head .tname b{font-weight:700;color:var(--text-2)}
+  .task-head .tchev{margin-left:auto;color:var(--text-muted);font-size:14px}
+
+  /* welcome bubble */
+  .welcome-bubble{background:var(--surface);border:1px solid var(--border-hi);border-radius:11px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px}
+  .welcome-bubble .gb-av{width:28px;height:28px;border-radius:50%;background:rgba(255,155,26,.18);border:1px solid var(--orange);color:var(--orange-text);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex:0 0 28px}
+  .welcome-bubble .wb-body{font-size:13px;color:var(--text-2);line-height:1.55}
+  .welcome-bubble .wb-body p{margin:0 0 6px}.welcome-bubble .wb-body p:last-child{margin-bottom:0}
+  .welcome-bubble .wb-play{width:28px;height:28px;border-radius:50%;background:rgba(43,210,126,.16);color:var(--green);display:flex;align-items:center;justify-content:center;flex:0 0 28px;font-size:11px}
+
+  /* answered Q-rows */
+  /* SUBTASKS LIST — Line 2 lives on this wrapper */
+  #rowsHost{position:relative;padding-left:24px;margin-top:2px}
+  #rowsHost::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:1.5px;background:#3f3f47;z-index:0}
+
+  /* Q-ROW = block container holding .q-head (the row) and optional .q-body */
+  .q-row{display:block;position:relative;transition:background .15s}
+
+  /* Q-HEAD = the one-line header (was .q-row before) */
+  .q-head{display:flex;align-items:center;gap:10px;padding:9px 0;position:relative;cursor:pointer}
+  .q-head .qdot{width:11px;height:11px;border-radius:50%;background:var(--orange);position:absolute;left:-19px;top:50%;transform:translateY(-50%);box-shadow:0 0 0 4px #0A0A0C;z-index:2;transition:transform .2s,opacity .15s,background .15s,border-color .15s,border-radius .15s,width .15s,height .15s,left .15s}
+  .q-head .qdot.square{border-radius:2px;width:12px;height:12px;left:-19px}
+  .q-head .qchev{color:var(--orange-text);font-size:13px;width:18px;text-align:center;cursor:pointer;transition:opacity .15s,transform .15s;flex:0 0 18px}
+  .q-head .qname{font-size:14px;font-weight:700;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .q-head .qans{font-size:13px;color:var(--green-text);font-weight:700}
+  .q-head .qstar{display:none;color:#FFB658;font-size:14px;margin-left:4px;flex:0 0 auto}
+  .q-row.starred .qstar{display:inline-block}
+  /* 3-dot menu trigger */
+  .q-head .qmenu{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;color:var(--text-mute);font-size:16px;cursor:pointer;opacity:0;transition:opacity .15s,background .15s,color .15s;background:transparent;border:0;font-family:inherit;letter-spacing:0;line-height:1;padding:0;margin-left:auto;flex:0 0 24px}
+  .q-head:hover .qmenu,
+  .q-row.expanded > .q-head .qmenu{opacity:.6}
+  .q-row.expanded > .q-head:hover .qmenu{opacity:1}
+  .q-head .qmenu:hover{background:rgba(255,255,255,.06);color:var(--text);opacity:1 !important}
+  .q-head .qmenu.open{opacity:1;background:rgba(255,255,255,.08);color:var(--text)}
+  /* legacy qcheck slot retired — the dot itself transforms into a checkbox in select mode */
+  .q-head .qcheck{display:none}
+  .task-block.select-mode .q-head .qmenu{opacity:0;pointer-events:none}
+
+  /* In group mode: the square subtask dot becomes an empty checkbox; checked when selected */
+  .task-block.select-mode .q-head .qdot.square{
+    background:transparent;
+    border:1.5px solid var(--text-mute);
+    border-radius:4px;
+    width:16px;
+    height:16px;
+    left:-21px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    pointer-events:auto;
+    box-shadow:0 0 0 4px #0A0A0C
+  }
+  .task-block.select-mode .q-row.sel .qdot.square{
+    background:var(--orange);
+    border-color:var(--orange);
+  }
+  .task-block.select-mode .q-row.sel .qdot.square::after{
+    content:'✓';
+    color:#1A1206;
+    font-size:11px;
+    font-weight:900;
+    line-height:1
+  }
+  /* Subtle row highlight when selected */
+  .q-row.sel .q-head{background:rgba(255,155,26,.05);border-radius:8px}
+  .task-block.select-mode .q-row{cursor:pointer}
+
+  /* Q-BODY = expanded content under a subtask; Line 3 lives here */
+  .q-body{display:none;padding:4px 0 14px 22px;position:relative;margin-left:-2px}
+  .q-body::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:1.5px;background:#3f3f47;z-index:0}
+  .q-row.expanded .q-body{display:block}
+  .q-row.expanded .q-head .qchev{transform:rotate(180deg)}
+
+  /* play head */
+  .play-row{display:flex;align-items:center;gap:8px;margin:4px 0 12px}
+  .play-btn{width:26px;height:26px;border-radius:50%;background:var(--green);color:#0c2718;display:flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 26px}
+  .play-chev{color:var(--green);font-size:13px}
+
+  /* bot text in subtask body */
+  .bot-text{font-size:13px;color:var(--green-text);line-height:1.55;margin:0 0 14px}
+  .bot-text.neutral{color:var(--text-muted);white-space:pre-wrap;font-family:inherit}
+
+  /* answer card (Why Projects Sometimes Fail) */
+  .ans-card{background:#16161a;border:1px solid var(--border-hi);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .ans-card .act{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:2px}
+  .ans-card .acs{font-size:11.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5}
+  .ans-card .ac-opt{display:flex;align-items:center;gap:11px;width:100%;background:#1f1f23;border:1px solid #2c2c31;color:var(--text);padding:10px 13px;border-radius:8px;text-align:left;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;margin-bottom:8px}
+  .ans-card .ac-opt.selected{border-color:var(--green);background:rgba(43,210,126,.06)}
+  .ans-card .ac-opt .ck{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--text-mute);background:transparent;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;flex:0 0 18px}
+  .ans-card .ac-opt.selected .ck{background:var(--green);border-color:var(--green);color:#0c2718;font-weight:900}
+  .ans-card .ac-input{display:block;width:100%;background:#16161a;border:1px solid #2c2c31;color:var(--text);padding:10px 13px;border-radius:8px;font-family:inherit;font-size:13px;outline:none;margin:8px 0 12px}
+  .ans-card .ac-input::placeholder{color:var(--text-mute)}
+  .ans-card .ac-confirm{display:block;width:100%;background:transparent;border:1px solid var(--orange);color:var(--orange-text);padding:11px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.01em}
+  .ans-card .ac-confirm:hover{background:rgba(255,155,26,.06)}
+
+  /* inline user reply bubble inside q-body */
+  .q-body .user-bubble{display:flex;justify-content:flex-end;margin:10px 0 0}
+  .q-body .user-bubble .ub{background:#3a2a10;color:var(--text);border:1px solid #5a4020;padding:8px 16px;border-radius:18px;font-size:12.5px;font-weight:500;max-width:75%}
+
+  /* GROUP */
+  .group-block{margin:14px 0;border-left:2px solid var(--orange);border-radius:0 8px 8px 0;background:rgba(255,155,26,.04);padding:10px 14px 6px 14px;position:relative}
+  .group-block::before{content:'';position:absolute;left:-25px;top:0;bottom:0;width:1.5px;background:var(--orange);opacity:.4}
+  .group-head{display:flex;align-items:center;gap:6px;padding:2px 0 8px;cursor:pointer}
+  .group-head .gico{color:var(--orange-text);font-size:12px}
+  .group-head .gname{font-size:13px;font-weight:800;color:var(--orange-text);letter-spacing:.01em;flex:1;background:transparent;border:0;outline:none;padding:3px 5px;border-radius:5px;font-family:inherit;min-width:0;transition:background .15s,box-shadow .15s}
+  .group-head .gname:hover{background:rgba(255,255,255,.04)}
+  .group-head .gname:focus{background:rgba(255,255,255,.06);box-shadow:0 0 0 1px var(--orange)}
+  .group-head .gedit{color:var(--text-mute);font-size:12px;cursor:pointer;padding:3px 5px;border-radius:5px;transition:.12s;line-height:1;opacity:.65}
+  .group-head .gedit:hover{color:var(--orange-text);background:rgba(255,155,26,.08);opacity:1}
+  .group-head .gcount{font-size:11px;color:var(--text-mute);font-weight:600;background:rgba(255,255,255,.04);padding:2px 7px;border-radius:999px;margin-right:2px;margin-left:4px}
+  .group-head .gchev{color:var(--orange-text);font-size:12px;transition:transform .2s;padding:0 4px;cursor:pointer}
+  .group-block.collapsed .group-head .gchev{transform:rotate(-90deg)}
+  .group-head .gungroup{font-size:10.5px;font-weight:700;color:var(--text-mute);background:rgba(255,255,255,.03);border:1px solid var(--border-hi);padding:3px 10px;border-radius:999px;cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:.15s;text-transform:uppercase;display:inline-flex;align-items:center;gap:5px}
+  .group-head .gungroup .ux{font-size:10px;line-height:1}
+  .group-head .gungroup:hover{color:var(--orange-text);border-color:var(--orange-bd);background:rgba(255,155,26,.08)}
+  .group-body{display:block}
+  .group-block.collapsed .group-body{display:none}
+  .group-block .q-row{padding:8px 0;border-bottom-color:rgba(255,155,26,.12)}
+  .group-block .q-row:last-child{border-bottom:0}
+  .group-block .q-row .qdot{left:-31px}
+
+  /* row action popover (Rename, Star, Save, Group, Delete) */
+  .row-popover{position:absolute;background:#141416;border:1px solid var(--border-hi);border-radius:10px;padding:5px;min-width:200px;box-shadow:0 18px 40px rgba(0,0,0,.65);z-index:50;display:none}
+  .row-popover.show{display:block;animation:rpIn .15s ease}
+  @keyframes rpIn{from{transform:translateY(-4px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .row-popover .rp-item{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--text);font-weight:600;font-family:inherit;background:transparent;border:0;width:100%;text-align:left}
+  .row-popover .rp-item:hover{background:var(--surface-hi)}
+  .row-popover .rp-item .rp-ic{width:14px;text-align:center;color:var(--text-mute);font-size:13px;flex:0 0 14px}
+  .row-popover .rp-item.danger{color:#FF7B7B}
+  .row-popover .rp-item.danger .rp-ic{color:#FF7B7B}
+  .row-popover .rp-sep{height:1px;background:var(--border);margin:4px 0}
+
+  /* Sticky select action bar at bottom of chat */
+  .select-bar{position:absolute;left:14px;right:14px;bottom:74px;background:#141416;border:1px solid var(--orange);border-radius:14px;padding:11px 13px;display:none;align-items:center;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.6);z-index:10;animation:slideUp .25s ease}
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .chatcol.select-on .select-bar{display:flex}
+  .select-bar .scount{font-size:12px;font-weight:700;color:var(--orange-text);background:var(--orange-tint);padding:5px 10px;border-radius:999px;border:1px solid var(--orange-bd);white-space:nowrap}
+  .select-bar input.gname-input{flex:1;background:#0e0e10;border:1px solid var(--border-hi);color:var(--text);font-size:13px;padding:8px 11px;border-radius:8px;font-family:inherit;outline:none;min-width:0}
+  .select-bar input.gname-input:focus{border-color:var(--orange)}
+  .select-bar input.gname-input::placeholder{color:var(--text-mute)}
+  .select-bar .gbtn{background:var(--orange);border:0;color:#1A1206;font-weight:800;font-size:12.5px;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+  .select-bar .gbtn:disabled{opacity:.4;cursor:not-allowed}
+  .select-bar .gbtn:not(:disabled):hover{filter:brightness(1.07)}
+  .select-bar .gcancel{font-size:12px;color:var(--text-2);background:transparent;border:1px solid var(--border-hi);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:inherit;font-weight:600}
+
+  /* tip banner shown when entering select mode */
+  .tip-banner{background:rgba(255,155,26,.06);border:1px dashed var(--orange-bd);border-radius:9px;padding:9px 12px;margin-bottom:12px;display:none;align-items:center;gap:8px;font-size:12px;color:var(--orange-text)}
+  .tasks-wrap.select-mode + .tip-banner{display:flex}
+  .chatcol.select-on .tip-banner{display:flex}
+  .tip-banner .ti{font-size:13px}
+
+  /* free-form chat conversation (bot + user) at bottom of scroll */
+  .conv{margin-top:32px;padding-top:20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:14px}
+  .bot-msg{display:flex;justify-content:flex-start}
+  .bot-msg .bm{background:#1A1A1D;border:1px solid var(--border-hi);color:var(--text-2);padding:11px 17px;border-radius:18px;font-size:13px;font-weight:500;max-width:75%;line-height:1.45}
+  .usr-msg{display:flex;justify-content:flex-end}
+  .usr-msg .um{background:#3a2a10;border:1px solid #5a4020;color:var(--text);padding:11px 17px;border-radius:18px;font-size:13px;font-weight:500;max-width:75%;line-height:1.45}
+
+  .cinput{border-top:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;background:var(--bg-2)}
+  .cinput .field{flex:1;height:44px;background:var(--surface);border:1px solid var(--border-hi);border-radius:22px;display:flex;align-items:center;padding:0 16px;gap:11px}
+  .cinput .field input{flex:1;background:transparent;border:0;outline:none;color:var(--text);font-size:13.5px;font-family:inherit}
+  .cinput .field input::placeholder{color:var(--text-mute)}
+  .cinput .field .mic{color:var(--text-mute);cursor:pointer;font-size:15px}
+  .cinput .send{width:40px;height:40px;border-radius:50%;background:var(--orange);color:#1a1206;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;cursor:pointer;border:0}
+
+  /* ============== SALES NAV / REQUIRED ITEMS BANNER ============== */
+  /* Empty-chat Welcome state — welcome title + subtitle + orange Start button (centered) */
+  .start-phase{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:60vh;padding:40px 24px;text-align:center;gap:14px}
+  .start-phase .sp-welcome{font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.022em;line-height:1.2}
+  .start-phase .sp-welcome i{font-style:normal;color:var(--text-2)}
+  .start-phase .sp-summary{font-size:13px;color:var(--text-muted);margin-bottom:12px}
+  .start-phase .start-btn{display:inline-flex;align-items:center;gap:9px;background:var(--orange);color:#1A1206;border:0;font-family:inherit;font-size:13.5px;font-weight:800;padding:13px 36px;border-radius:11px;cursor:pointer;letter-spacing:.04em;transition:.15s}
+  .start-phase .start-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .start-phase.gone{display:none}
+
+  /* Post-start display rules live higher up — flex column with conv anchored to bottom */
+
+  /* Sticky floating "Phase 1 has 5 required items" banner — stays at top */
+  .req-banner-row{display:none;justify-content:center;position:sticky;top:0;padding:14px 0 12px;margin:0 -18px 14px;background:linear-gradient(180deg,#0A0A0C 60%,rgba(10,10,12,0));z-index:8}
+  .req-banner-row.show{display:flex}
+  .req-banner{box-shadow:0 8px 22px rgba(0,0,0,.5),0 0 0 4px rgba(255,155,26,.08)}
+  .req-banner{display:inline-flex;align-items:center;gap:9px;background:#1A1A1D;border:1px solid var(--border-hi);border-radius:999px;padding:7px 14px 7px 9px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;transition:.18s;animation:rbIn .35s ease}
+  .req-banner:hover{border-color:var(--orange-bd);background:rgba(255,155,26,.05)}
+  .req-banner .rb-ic{width:22px;height:22px;border-radius:50%;background:var(--orange);color:#1A1206;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}
+  .req-banner b{color:var(--orange-text);font-weight:700}
+  .req-banner .rb-view{color:var(--orange-text);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+  @keyframes rbIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ============== SALES NAV — sub-panel inside the chat shell ============== */
+  .salesnav{flex:0 0 480px;min-width:0;min-height:0;border:0;border-left:1px solid var(--border);border-radius:0;background:#1A1A1F;display:none;flex-direction:column;overflow:hidden;position:relative;animation:snIn .28s ease}
+  .salesnav.open{display:flex}
+  @keyframes snIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+  .sn-head{display:flex;align-items:center;gap:10px;padding:16px 18px 14px;border-bottom:1px solid var(--border);background:transparent}
+  .sn-head .sn-ic{width:30px;height:30px;border-radius:8px;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}
+  .sn-head .sn-ti{font-size:15px;font-weight:700;flex:1;letter-spacing:-.005em}
+  .sn-head .sn-close{background:transparent;border:0;color:var(--text-mute);font-size:18px;cursor:pointer;font-family:inherit;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+  .sn-head .sn-close:hover{color:var(--text);background:rgba(255,255,255,.06)}
+
+  .sn-tabs{display:flex;gap:0;padding:0 8px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+  .sn-tabs::-webkit-scrollbar{display:none}
+  .sn-tab{background:transparent;border:0;color:var(--text-mute);font-size:12.5px;font-weight:600;padding:13px 14px 11px;cursor:pointer;font-family:inherit;letter-spacing:-.005em;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:.15s}
+  .sn-tab:hover{color:var(--text-2)}
+  .sn-tab.on{color:var(--orange-text);border-bottom-color:var(--orange)}
+  .sn-tab .count{font-size:11.5px;opacity:.75;margin-left:3px;font-variant-numeric:tabular-nums}
+
+  .sn-body{flex:1;overflow-y:auto;padding:18px 20px 18px;scroll-behavior:smooth;position:relative;display:flex !important;flex-direction:column}
+  /* margin-top:auto on stage pushes it down when there's room; vanishes when overflowing so scrolling still works */
+  .sn-body > .sn-stage{margin-top:auto !important}
+  .sn-body > .sn-stage.active{display:flex !important;flex-direction:column}
+
+  /* Floating header band — bars sit above the scroll body */
+  .sn-head-stack{display:flex;flex:0 0 auto;flex-direction:column;gap:8px;background:transparent;z-index:8}
+  .sn-head-stack:has(.show){padding:10px 18px 0}
+
+  /* Product status bar — floating; hidden until chat reveal triggers it */
+  .sn-status-bar{display:none;align-items:center;gap:8px;padding:9px 12px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;background:#16161a;border:1px solid var(--border-hi);border-radius:11px;box-shadow:0 8px 22px rgba(0,0,0,.5)}
+  .sn-status-bar.show{display:flex;animation:srIn .35s ease}
+  .sn-status-bar::-webkit-scrollbar{display:none}
+  .sn-status-bar > *{flex:0 0 auto}
+  .sn-status-bar .lbl{font-size:9.5px;color:var(--text-mute);font-weight:800;letter-spacing:.08em;text-transform:uppercase;flex:0 0 auto}
+  .sn-status-pill{display:inline-flex;align-items:center;gap:5px;background:#0e0e10;border:1px solid var(--border-hi);color:var(--text-2);font-family:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:99px;cursor:pointer;white-space:nowrap;transition:.12s;flex:0 0 auto}
+  .sn-status-pill:hover{border-color:var(--text-mute);color:var(--text)}
+  .sn-status-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--text-mute)}
+  .sn-status-pill.need .dot{background:var(--text-mute)}
+  .sn-status-pill.ordered{color:var(--orange-text);border-color:var(--orange-bd)}
+  .sn-status-pill.ordered .dot{background:var(--orange)}
+  .sn-status-pill.have{color:var(--text-mute);opacity:.5;text-decoration:line-through;text-decoration-thickness:1.5px;border-color:var(--border)}
+  .sn-status-pill.have .dot{background:var(--good)}
+
+  /* Floating scroll-to-bottom arrow (Claude-style) — pinned to drawer body via absolute positioning */
+  .sn-scroll-bot{position:absolute;right:14px;bottom:14px;width:34px;height:34px;border-radius:50%;background:#1A1A1F;border:1px solid var(--border-hi);color:var(--text-2);font-size:16px;font-weight:700;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:10;transition:.12s;font-family:inherit;line-height:1}
+  .sn-scroll-bot.on{display:flex;animation:sbIn .2s ease}
+  .sn-scroll-bot:hover{color:var(--text);border-color:var(--text-mute)}
+  @keyframes sbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  .sn-body::-webkit-scrollbar{width:7px}.sn-body::-webkit-scrollbar-thumb{background:#26262a;border-radius:4px}
+
+  .sn-stage{display:none}
+  .sn-stage.active{display:block;animation:stageIn .25s ease}
+  @keyframes stageIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+  /* === CHAT-FLOW reveal inside Sales Nav === */
+  .sn-msg{display:flex;gap:9px;align-items:flex-start;margin:0 0 12px}
+  .sn-msg.no-av .av{display:none}
+  .sn-msg.no-av .b{max-width:100%}
+  .sn-msg .av{width:24px;height:24px;border-radius:50%;background:rgba(255,155,26,.18);border:1px solid var(--orange-bd);color:var(--orange-text);font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex:0 0 24px;margin-top:1px}
+  .sn-msg .b{font-size:13px;color:var(--text-2);line-height:1.55;background:#0e0e10;border:1px solid var(--border-hi);border-radius:13px;padding:9px 13px;max-width:92%}
+  .sn-msg .b b{color:var(--text);font-weight:700}
+  .sn-msg .b.fine{font-style:italic;color:var(--text-mute);font-size:11.5px;background:transparent;border:0;padding:0 4px;max-width:none}
+
+  /* Typing indicator */
+  .sn-typing{display:flex;gap:9px;align-items:center;margin:0 0 12px}
+  .sn-typing .av{width:24px;height:24px;border-radius:50%;background:rgba(255,155,26,.18);border:1px solid var(--orange-bd);color:var(--orange-text);font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex:0 0 24px}
+  .sn-typing .dots{display:inline-flex;gap:4px;padding:9px 14px;background:#0e0e10;border:1px solid var(--border-hi);border-radius:13px}
+  .sn-typing .dots i{width:5px;height:5px;border-radius:50%;background:var(--text-mute);animation:snTyp 1.2s ease-in-out infinite}
+  .sn-typing .dots i:nth-child(2){animation-delay:.15s}
+  .sn-typing .dots i:nth-child(3){animation-delay:.3s}
+  @keyframes snTyp{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-3px);opacity:1}}
+
+  /* Progressive reveal — items start completely removed from flow, then pop in via .shown */
+  .sn-reveal{display:none}
+  .sn-reveal.shown{display:block;animation:srIn .35s ease}
+  .sn-msg.sn-reveal.shown{display:flex}
+  @keyframes srIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  .sn-intro{font-size:13.5px;color:var(--text-2);line-height:1.55;margin:0 0 14px}
+  .sn-intro b{color:var(--text);font-weight:700}
+  .sn-note{font-size:12px;color:var(--text-2);line-height:1.5;margin:0 0 4px}
+  .sn-fine{font-size:11.5px;color:var(--text-mute);font-style:italic;line-height:1.5;margin:0 0 18px}
+
+  /* ============== ITEMS CARD (one wrapper with sub-cards) ============== */
+  .items-card{background:#0F0F12;border:1px solid var(--border-hi);border-radius:14px;overflow:hidden;margin-bottom:18px}
+  .items-card .ic-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+  .items-card .ic-title{font-size:13px;font-weight:800;color:var(--text);letter-spacing:.02em;text-transform:uppercase}
+  .items-card .ic-progress{font-size:11.5px;color:var(--text-mute);font-weight:600;font-variant-numeric:tabular-nums}
+  .items-card .ic-progress b{color:var(--orange-text);font-weight:800}
+  .items-card .ic-body{padding:0}
+  /* Persistent footer at the bottom of the salesnav drawer */
+  .sn-footer{padding:14px 18px;border-top:1px solid var(--border);background:#0c0c10;flex:0 0 auto}
+  .sn-footer .ic-done{display:block;width:100%;background:var(--orange);border:0;color:#1A1206;font-family:inherit;font-size:13px;font-weight:800;padding:13px;border-radius:10px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;transition:.15s}
+  .sn-footer .ic-done:hover{filter:brightness(1.07)}
+  .sn-footer .ic-done:disabled{opacity:.35;cursor:not-allowed}
+  .items-card .ic-done{display:block;width:100%;background:var(--orange);border:0;color:#1A1206;font-family:inherit;font-size:13px;font-weight:800;padding:13px;border-radius:10px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;transition:.15s}
+  .items-card .ic-done:hover:not(:disabled){filter:brightness(1.07)}
+  .items-card .ic-done:disabled{opacity:.35;cursor:not-allowed}
+
+  /* Item list (Stage 0) */
+  .sn-items{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+  .sn-item{background:transparent;border:0;border-bottom:1px solid var(--border);border-radius:0;overflow:hidden;transition:background .15s}
+  .sn-item:last-child{border-bottom:0}
+  .sn-item:hover{background:rgba(255,255,255,.015)}
+  .sn-item.have{opacity:.65}
+  .sn-item.have:hover{background:transparent}
+  .items-card .sn-items{margin:0;gap:0}
+  .sn-item-head{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;cursor:pointer;user-select:none}
+  /* Checkbox removed — items are confirmed via "I have one" → validation only */
+  .sn-item .si-check{display:none}
+  .sn-item .si-check-was{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--text-mute);background:#0A0A0C;display:flex;align-items:center;justify-content:center;flex:0 0 20px;margin-top:1px;transition:.12s;cursor:pointer}
+  /* HAVE state — green-orange filled, name strikethrough */
+  .sn-item.have .si-check{background:var(--orange);border-color:var(--orange)}
+  .sn-item.have .si-check::after{content:'✓';color:#1A1206;font-size:12px;font-weight:900;line-height:1}
+  .sn-item.have .si-name{text-decoration:line-through;text-decoration-color:var(--text-mute);color:var(--text-mute)}
+  .sn-item.have .si-desc{color:var(--text-mute)}
+  /* ORDERED state — dashed orange box, name in italic with badge */
+  .sn-item.ordered .si-check{background:transparent;border:1.5px dashed var(--orange);position:relative}
+  .sn-item.ordered .si-check::after{content:'⊙';color:var(--orange-text);font-size:13px;font-weight:900;line-height:1}
+  .sn-item.ordered .si-name{color:var(--text-2);font-style:italic}
+  .sn-item.ordered .si-desc{color:var(--text-mute);font-style:italic}
+  /* Inline "I've ordered it" pill under each item description */
+  .sn-item .si-actions{display:flex;align-items:center;gap:8px;margin-top:7px}
+  .sn-item .si-status{display:none;align-items:center;gap:5px;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
+  .sn-item.have .si-status.is-have{display:inline-flex;color:#0c2718;background:var(--orange)}
+  .sn-item.have .si-status.is-have::before{content:'✓';margin-right:1px}
+  .sn-item.ordered .si-status.is-ord{display:inline-flex;color:var(--orange-text);background:var(--orange-tint);border:1px solid var(--orange-bd)}
+  .sn-item.ordered .si-status.is-ord::before{content:'📦 ';font-weight:400;letter-spacing:0}
+  /* Small "I've ordered" toggle button */
+  .si-ord-btn,.si-have-btn{background:transparent;border:1px solid var(--border-hi);color:var(--text-2);font-family:inherit;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:99px;cursor:pointer;letter-spacing:.04em;text-transform:uppercase;transition:.12s}
+  .si-ord-btn:hover{border-color:var(--orange-bd);color:var(--orange-text);background:rgba(255,155,26,.05)}
+  .si-have-btn{border-color:var(--orange-bd);color:var(--orange-text);background:rgba(255,155,26,.06)}
+  .si-have-btn:hover{background:var(--orange);color:#1A1206;border-color:var(--orange)}
+  .sn-item.ordered .si-ord-btn,.sn-item.have .si-ord-btn,.sn-item.have .si-have-btn,.sn-item.ordered .si-have-btn,.sn-item.validating .si-ord-btn,.sn-item.validating .si-have-btn{display:none}
+
+  /* ============== Inline VALIDATION flow inside an item ============== */
+  .si-validate{display:none;margin:12px 14px 14px 47px;border-left:1.5px solid var(--orange-bd);padding-left:14px}
+  .sn-item.validating .si-validate{display:block;animation:vlIn .25s ease}
+  @keyframes vlIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+
+  .si-bot{display:flex;gap:9px;align-items:flex-start;margin:0 0 10px}
+  .si-bot .av{width:22px;height:22px;border-radius:50%;background:rgba(255,155,26,.18);border:1px solid var(--orange-bd);color:var(--orange-text);font-weight:800;font-size:10.5px;display:flex;align-items:center;justify-content:center;flex:0 0 22px}
+  .si-bot .b{font-size:12.5px;color:var(--text-2);line-height:1.5;background:#0e0e10;border:1px solid var(--border-hi);border-radius:12px;padding:8px 12px;max-width:88%}
+  .si-bot .b b{color:var(--text);font-weight:700}
+  .si-bot.success .av{background:rgba(43,210,126,.18);border-color:var(--good-bd);color:var(--good-text)}
+  .si-bot.success .b{border-color:var(--good-bd)}
+  .si-bot.warn .av{background:rgba(255,87,87,.18);border-color:rgba(255,87,87,.4);color:#FF8585}
+  .si-bot.warn .b{border-color:rgba(255,87,87,.4)}
+
+  .si-val-tabs{display:flex;gap:5px;background:#0e0e10;border:1px solid var(--border-hi);border-radius:9px;padding:4px;margin-bottom:10px}
+  .si-val-tab{flex:1;background:transparent;border:0;color:var(--text-mute);font-family:inherit;font-size:11.5px;font-weight:700;padding:7px;border-radius:6px;cursor:pointer;letter-spacing:.04em;text-transform:uppercase}
+  .si-val-tab.on{background:var(--orange);color:#1A1206}
+
+  .si-val-input{display:flex;align-items:center;gap:8px;background:#0e0e10;border:1px solid var(--border-hi);border-radius:9px;padding:5px 5px 5px 13px;margin-bottom:8px}
+  .si-val-input input{flex:1;background:transparent;border:0;outline:none;color:var(--text);font-family:inherit;font-size:13px;padding:8px 0}
+  .si-val-input input::placeholder{color:var(--text-mute)}
+  .si-val-input .si-verify{background:var(--orange);color:#1A1206;border:0;font-family:inherit;font-size:11.5px;font-weight:800;padding:7px 12px;border-radius:7px;cursor:pointer;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;transition:.12s}
+  .si-val-input .si-verify:hover{filter:brightness(1.07)}
+  .si-val-input .si-verify:disabled{opacity:.4;cursor:not-allowed}
+
+  .si-val-photo{display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,155,26,.04);border:1.5px dashed var(--orange-bd);border-radius:9px;padding:18px 12px;cursor:pointer;color:var(--orange-text);font-family:inherit;font-size:12.5px;font-weight:700;margin-bottom:8px;transition:.12s}
+  .si-val-photo:hover{background:rgba(255,155,26,.08)}
+
+  /* Processing typing dots */
+  .si-processing{display:flex;align-items:center;gap:9px;padding:8px 12px;background:#0e0e10;border:1px solid var(--border-hi);border-radius:12px;width:fit-content;margin-left:31px}
+  .si-processing i{width:5px;height:5px;border-radius:50%;background:var(--orange);animation:siTyp 1.2s ease-in-out infinite}
+  .si-processing i:nth-child(2){animation-delay:.15s}
+  .si-processing i:nth-child(3){animation-delay:.3s}
+  @keyframes siTyp{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-3px);opacity:1}}
+
+  /* Validated state — green left bar instead of orange */
+  .sn-item.have .si-validate{border-left-color:var(--good-bd)}
+
+  /* Cancel validation */
+  .si-cancel{display:inline-block;background:transparent;border:0;color:var(--text-mute);font-family:inherit;font-size:11px;font-weight:600;padding:4px 0;cursor:pointer;margin-left:31px}
+  .si-cancel:hover{color:var(--text-2)}
+  .sn-item .si-body{flex:1;min-width:0}
+  .sn-item .si-name{font-size:14.5px;font-weight:700;margin-bottom:3px;letter-spacing:-.005em;transition:.12s}
+  .sn-item .si-desc{font-size:12px;color:var(--text-2);line-height:1.5;margin:0;transition:.12s}
+  .sn-item .si-desc .si-rm{color:var(--orange-text);font-weight:700;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+  .sn-item .si-chev{color:var(--text-mute);font-size:13px;transition:transform .2s;margin-top:1px}
+  .sn-item.expanded .si-chev{transform:rotate(180deg);color:var(--orange-text)}
+  .sn-item .si-extra{display:none;padding:0 14px 13px 45px;font-size:11.5px;color:var(--text-mute);line-height:1.55}
+  .sn-item.expanded .si-extra{display:block;animation:exIn .2s ease}
+  @keyframes exIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+  .sn-item .si-extra ol{margin:0;padding-left:18px}
+  .sn-item .si-extra li{margin-bottom:5px}
+
+  .sn-cta{position:sticky;bottom:-18px;background:linear-gradient(180deg,rgba(10,10,12,0),#0A0A0C 35%);padding:18px 0 4px;margin:8px -20px -18px;padding-left:20px;padding-right:20px}
+  .sn-done{display:block;width:100%;background:var(--orange);border:0;color:#1A1206;font-family:inherit;font-size:13.5px;font-weight:800;padding:13px;border-radius:11px;cursor:pointer;letter-spacing:.06em;transition:.15s;text-transform:uppercase}
+  .sn-done:hover{filter:brightness(1.06)}
+  .sn-done:disabled{opacity:.4;cursor:not-allowed}
+  .sn-back{display:inline-flex;align-items:center;gap:6px;background:transparent;border:0;color:var(--text-2);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:0 0 14px;letter-spacing:-.005em}
+  .sn-back:hover{color:var(--text)}
+
+  /* Stage 1 — Sourcing */
+  /* Top "Sourcing for X" bar */
+  .sn-active-bar{display:flex;align-items:center;gap:12px;background:#16161B;border:1px solid #2c2c33;border-radius:11px;padding:10px 12px 10px 8px;margin-bottom:14px}
+  .sn-back-mini{width:30px;height:30px;border-radius:8px;background:transparent;border:1px solid var(--border-hi);color:var(--text-2);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+  .sn-back-mini:hover{border-color:var(--text);color:var(--text)}
+  .sn-active-meta{display:flex;flex-direction:column;flex:1;min-width:0}
+  .sn-active-lbl{font-size:10.5px;color:var(--text-mute);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .sn-active-name{font-size:15px;font-weight:800;color:var(--orange-text);letter-spacing:-.012em;margin-top:1px}
+  .sn-active-progress{font-size:11px;color:var(--text-mute);font-weight:600;letter-spacing:-.005em}
+  .sn-active-progress b{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
+
+  /* Sticky bottom item-switcher */
+  .sn-bottom-nav{position:sticky;bottom:-18px;background:#1A1A1F;border-top:1px solid var(--border);padding:12px 0 14px;margin:14px -20px -18px;padding-left:16px;padding-right:16px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(4px)}
+  .sn-bottom-label{font-size:10.5px;color:var(--text-mute);font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex:0 0 auto}
+  .sn-bottom-nav .sn-chip-row{flex:1;margin:0;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .sn-bottom-nav .sn-chip-row::-webkit-scrollbar{display:none}
+  .sn-confirm-mini{background:var(--orange);color:#1A1206;border:0;font-family:inherit;font-size:11.5px;font-weight:800;padding:8px 12px;border-radius:8px;cursor:pointer;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;transition:.12s}
+  .sn-confirm-mini:hover{filter:brightness(1.07)}
+
+  .sn-chip-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .sn-chip{padding:7px 12px;background:#0e0e10;border:1px solid var(--border-hi);color:var(--text-2);font-family:inherit;font-size:12px;font-weight:700;border-radius:999px;cursor:pointer;letter-spacing:-.005em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:.12s}
+  .sn-chip:hover{border-color:var(--text-mute);color:var(--text)}
+  .sn-chip.on{background:var(--orange);border-color:var(--orange);color:#1A1206}
+  .sn-chip.on .ck{background:#1A1206;border-color:#1A1206}
+  .sn-chip .ck{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:transparent;border:1.5px solid var(--text-mute);font-size:8px;font-weight:900;color:transparent;line-height:1}
+  .sn-chip.done{border-color:var(--good-bd);color:var(--good-text)}
+  .sn-chip.done .ck{background:var(--good);border-color:var(--good);color:#0c2718}
+  .sn-chip.done .ck::after{content:'✓'}
+
+  .sn-sub-tabs{display:none;gap:4px;background:#16161a;border:1px solid var(--border-hi);border-radius:11px;padding:4px;margin:0;box-shadow:0 8px 22px rgba(0,0,0,.5)}
+  .sn-sub-tabs.show{display:flex;animation:srIn .35s ease}
+  /* Inline (in-chat) version of the tabs — visible by default once revealed in chat flow */
+  .sn-sub-tabs-inline{display:none;margin:6px 0 16px}
+  .sn-sub-tabs-inline.shown{display:flex;animation:srIn .35s ease}
+  .sn-sub-tab{flex:1 1 0;text-align:center;background:transparent;border:0;color:var(--text-mute);font-family:inherit;font-size:12.5px;font-weight:800;padding:9px;border-radius:8px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase}
+  .sn-sub-tab.on{background:var(--orange);color:#1A1206}
+
+  .sn-item-detail{background:#121216;border:1px solid #2c2c33;border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .sn-id-row{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;margin-bottom:6px}
+  .sn-id-row .ic{width:26px;height:26px;border-radius:7px;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex:0 0 26px}
+  .sn-id-desc{font-size:12.5px;color:var(--text-2);line-height:1.55;margin:0}
+
+  /* Strategy step blocks */
+  .sn-step{background:#121216;border:1px solid #2c2c33;border-radius:12px;padding:13px 14px;margin-bottom:10px;transition:border-color .15s}
+  .sn-step:hover{border-color:var(--orange-bd)}
+  .sn-step-head{display:flex;align-items:flex-start;gap:11px;cursor:pointer}
+  .sn-step-num{width:26px;height:26px;border-radius:50%;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:900;flex:0 0 26px;font-family:ui-monospace,Menlo,monospace;line-height:1}
+  .sn-step.done .sn-step-num{background:var(--orange);color:#1A1206;border-color:var(--orange)}
+  .sn-step-ti{font-size:13.5px;font-weight:700;flex:1;letter-spacing:-.005em;line-height:1.4}
+  .sn-step-chev{color:var(--text-mute);font-size:12px;transition:transform .2s;margin-top:6px}
+  .sn-step.expanded .sn-step-chev{transform:rotate(180deg);color:var(--orange-text)}
+  .sn-step-body{display:none;padding:10px 0 0 37px;font-size:12.5px;color:var(--text-2);line-height:1.55}
+  .sn-step.expanded .sn-step-body{display:block}
+  .sn-step-body p{margin:0 0 8px}.sn-step-body p:last-child{margin-bottom:0}
+  .sn-step-body ul{margin:0 0 8px;padding-left:18px}.sn-step-body li{margin-bottom:4px}
+  .sn-example{background:#0e0e10;border:1px solid var(--border);border-radius:9px;padding:11px 13px;margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.55;font-style:italic;position:relative}
+  .sn-example::before{content:'Example message';position:absolute;top:-7px;left:11px;background:#0A0A0C;color:var(--orange-text);font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:0 7px;font-style:normal}
+
+  /* Action CTA row — flat clickable button, not an accordion */
+  .sn-cta-row{display:flex;align-items:center;gap:12px;width:100%;background:#121216;border:1px solid #2c2c33;border-radius:12px;padding:14px;margin:0 0 10px;cursor:pointer;font-family:inherit;text-align:left;transition:.15s}
+  .sn-cta-row:hover{border-color:var(--orange-bd);background:#15151a}
+  .sn-cta-row .sn-cta-icn{width:30px;height:30px;border-radius:50%;background:var(--orange-tint);border:1px solid var(--orange-bd);color:var(--orange-text);display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 30px;line-height:1}
+  .sn-cta-row .sn-cta-label{flex:1;font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:-.005em;line-height:1.35}
+  .sn-cta-row .sn-cta-arrow{color:var(--orange-text);font-size:18px;font-weight:700;line-height:1;flex:0 0 auto;transition:transform .15s}
+  .sn-cta-row:hover .sn-cta-arrow{transform:translateX(3px)}
+
+  /* Commit / selection — lock in this option, or jump to another */
+  .sn-commit{margin:18px 0 10px;padding:18px 18px 16px;background:#121216;border:1px solid var(--orange-bd);border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .sn-commit-primary{background:var(--orange);border:0;color:#1A1206;font-family:inherit;font-size:13.5px;font-weight:800;padding:12px 20px;border-radius:10px;cursor:pointer;letter-spacing:.04em;text-transform:uppercase;width:100%;max-width:280px}
+  .sn-commit-primary:hover{filter:brightness(1.06)}
+  .sn-commit-alt{font-size:12px;color:var(--text-mute);font-weight:600}
+  .sn-commit-alt-btn{background:transparent;border:0;color:var(--orange-text);font-family:inherit;font-size:12px;font-weight:800;padding:2px 4px;cursor:pointer;text-decoration:underline;letter-spacing:-.005em}
+  .sn-commit-alt-btn:hover{color:var(--orange)}
+
+  /* ============== RENT MAP MOCKUP ============== */
+  .sn-map-wrap{margin:14px 0 18px;background:#121216;border:1px solid #2c2c33;border-radius:14px;overflow:hidden}
+  .sn-map-tools{display:flex;gap:6px;padding:11px 12px;border-bottom:1px solid var(--border);background:#0e0e10}
+  .sn-map-tool-lbl{font-size:10.5px;color:var(--text-mute);font-weight:800;letter-spacing:.08em;text-transform:uppercase;align-self:center;margin-right:4px}
+  .sn-map-tool{background:transparent;border:1px solid var(--border-hi);color:var(--text-2);font-family:inherit;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:99px;cursor:pointer;letter-spacing:-.005em;display:inline-flex;align-items:center;gap:5px;transition:.12s}
+  .sn-map-tool:hover{border-color:var(--text-mute);color:var(--text)}
+  .sn-map-tool.on{background:var(--orange);border-color:var(--orange);color:#1A1206}
+  .sn-map-tool .em{font-size:11px}
+
+  .sn-map{position:relative;height:260px;background:#0e0e10;background-image:linear-gradient(rgba(255,155,26,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,155,26,.04) 1px,transparent 1px);background-size:32px 32px;overflow:hidden}
+  /* Stylized streets */
+  .sn-map::before{content:'';position:absolute;left:0;right:0;top:42%;height:2px;background:rgba(255,255,255,.07)}
+  .sn-map::after{content:'';position:absolute;top:0;bottom:0;left:35%;width:2px;background:rgba(255,255,255,.07)}
+  .sn-map .road-2{position:absolute;left:0;right:0;top:72%;height:1.5px;background:rgba(255,255,255,.04)}
+  .sn-map .road-3{position:absolute;top:0;bottom:0;left:64%;width:1.5px;background:rgba(255,255,255,.04)}
+  .sn-map .park{position:absolute;left:74%;top:8%;width:22%;height:32%;background:rgba(43,210,126,.06);border:1px solid rgba(43,210,126,.18);border-radius:6px}
+  .sn-map .you{position:absolute;left:35%;top:42%;transform:translate(-50%,-50%);z-index:3;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.7);border:1px solid var(--border-hi);padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:700;color:var(--text-2);backdrop-filter:blur(4px)}
+  .sn-map .you::before{content:'';width:8px;height:8px;border-radius:50%;background:#4A9EFF;box-shadow:0 0 0 4px rgba(74,158,255,.25)}
+
+  /* Map pin (rental location for a tool) */
+  .sn-map-pin{position:absolute;transform:translate(-50%,-100%);display:none;animation:pinDrop .35s cubic-bezier(.34,1.56,.64,1);z-index:2}
+  .sn-map-pin.show{display:block}
+  @keyframes pinDrop{from{transform:translate(-50%,-130%);opacity:0}to{transform:translate(-50%,-100%);opacity:1}}
+  .sn-map-pin .pin-bubble{background:#1f1f23;border:1px solid var(--orange);color:var(--text);font-size:11px;font-weight:700;padding:5px 10px;border-radius:9px;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.5);position:relative;letter-spacing:-.005em}
+  .sn-map-pin .pin-bubble::after{content:'';position:absolute;left:50%;bottom:-5px;transform:translateX(-50%) rotate(45deg);width:9px;height:9px;background:#1f1f23;border-right:1px solid var(--orange);border-bottom:1px solid var(--orange)}
+  .sn-map-pin .pin-bubble .price{color:var(--orange-text);margin-left:4px}
+  .sn-map-pin .pin-bubble .em{margin-right:4px}
+  .sn-map-pin .pin-stick{position:absolute;left:50%;top:100%;transform:translate(-50%,4px);width:2px;height:14px;background:var(--orange);border-radius:1px}
+  .sn-map-pin .pin-stick::after{content:'';position:absolute;left:50%;top:100%;transform:translate(-50%,-50%);width:8px;height:8px;background:var(--orange);border-radius:50%;box-shadow:0 0 0 3px rgba(255,155,26,.25)}
+
+  /* Empty hint */
+  .sn-map-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11.5px;color:var(--text-mute);font-style:italic;font-weight:500;text-align:center;line-height:1.5;max-width:240px;background:rgba(0,0,0,.5);padding:9px 14px;border-radius:10px;backdrop-filter:blur(4px);border:1px solid var(--border)}
+  .sn-map.has-pins .sn-map-hint{display:none}
+
+  .sn-map-foot{padding:12px;display:flex;gap:8px;background:#0e0e10;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-mute);align-items:center}
+  .sn-map-foot b{color:var(--text);font-weight:700}
+  .sn-map-foot .stats{flex:1}
+  .sn-map-foot .cta{background:var(--orange);color:#1A1206;border:0;font-family:inherit;font-size:11.5px;font-weight:800;padding:7px 12px;border-radius:8px;cursor:pointer;letter-spacing:.04em;text-transform:uppercase}
+
+  /* Ganttsy follow-up line inside a sub-stage — feels like a chat bubble */
+  .sn-bot-line{display:flex;align-items:center;gap:9px;margin:16px 0 12px;font-size:12.5px;color:var(--text-2);line-height:1.5}
+  .sn-bot-line .bot-av{width:22px;height:22px;border-radius:50%;background:rgba(255,155,26,.18);border:1px solid var(--orange-bd);color:var(--orange-text);font-weight:800;font-size:10.5px;display:flex;align-items:center;justify-content:center;flex:0 0 22px}
+  .sn-bot-line span:last-child{font-weight:600;color:var(--text)}
+
+  /* Small inline action button used inside step bodies */
+  .sn-mini{display:inline-block;background:rgba(255,155,26,.06);border:1px solid var(--orange-bd);color:var(--orange-text);font-family:inherit;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;letter-spacing:-.005em;margin:4px 4px 4px 0;transition:.12s}
+  .sn-mini:hover{background:rgba(255,155,26,.12);color:var(--text)}
+
+  .sn-tip{display:flex;gap:11px;align-items:flex-start;background:rgba(255,155,26,.04);border:1px solid var(--orange-bd);border-left-width:3px;border-radius:9px;padding:11px 13px;margin:14px 0;font-size:12.5px;color:var(--text-2);line-height:1.5}
+  .sn-tip .tip-ic{color:var(--orange-text);font-size:14px;flex:0 0 16px;line-height:1.2}
+  .sn-tip b{color:var(--text);font-weight:700}
+
+  .sn-validate{background:#121216;border:1px solid #2c2c33;border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .sn-validate h4{margin:0 0 4px;font-size:10.5px;color:var(--orange-text);font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+  .sn-validate .val-body{font-size:12.5px;color:var(--text-2);line-height:1.55}
+  .sn-validate .val-upload{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed var(--orange-bd);color:var(--orange-text);font-family:inherit;font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;margin-top:10px}
+  .sn-validate .val-upload:hover{background:rgba(255,155,26,.06)}
+
+
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(10px);background:#27272b;border:1px solid var(--border-hi);color:var(--text);font-size:13px;font-weight:600;padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;z-index:80}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .caption{max-width:560px;margin:0 auto 8px;color:var(--text-muted);font-size:12px;line-height:1.55;padding:0 4px}
+  .caption b{color:var(--orange-text);font-weight:700}
+  .col-wrap{display:flex;flex-direction:column;gap:8px}
+</style>
+</head>
+<body>
+<div class="variant-tag">VARIANT A · Hover checkbox <a href="onboarding-c-group-A.html" class="on">A desktop</a><a href="onboarding-c-group-A-mobile.html">A mobile</a><a href="onboarding-c-group-B.html">B desktop</a><a href="onboarding-c-group-B-mobile.html">B mobile</a></div>
+
+<div class="app">
+  <aside class="rail">
+    <div class="item"><span class="ic">⌂</span>Home</div>
+    <div class="item active"><span class="logo"><i></i><i></i><i></i></span>Project</div>
+    <div class="item"><span class="ic">⚑</span>Follow</div>
+    <div class="item"><span class="ic">⊕</span>Create</div>
+    <div class="spacer"></div>
+    <div class="item"><span class="ic">⚙</span>Settings</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">Projects&nbsp;/&nbsp;<span class="now">Project Board</span></div>
+      <div class="titlerow">
+        <div class="back">‹</div>
+        <h1>Project Board</h1>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="board">
+        <div class="btoolbar">
+          <span class="backg">Back to full Gantt chart</span>
+          <span class="sp"></span>
+          <button class="today">Today</button>
+          <button class="zbtn">+</button>
+          <button class="zbtn">−</button>
+        </div>
+        <div class="bscroll">
+          <div class="pcard">
+            <div class="pimg"></div>
+            <div class="pbody">
+              <h2>Vortex Data Analysis (with long name)</h2>
+              <div class="viewrow"><span class="shareb">↗</span><span class="viewmore">View More</span></div>
+            </div>
+            <div class="ptl"><div class="fill"></div><div class="d" style="left:18%"></div><div class="d" style="left:36%"></div><div class="d" style="left:54%"></div><div class="d" style="left:72%"></div></div>
+          </div>
+          <div class="gantt">
+            <div class="ghead"><div class="corner"></div><div class="mon">Jan, 2026</div><div class="wk">Week 1</div><div class="wk">Week 2</div><div class="wk">Week 3</div><div class="wk">Week 4</div></div>
+            <div class="grow">
+              <div class="glabel"><div class="pn">Phase 01:</div><div class="pn">Discovery &amp; Project Setup</div><div class="pf">1 / 5</div></div>
+              <div class="gtrack tinted-g" style="min-height:160px">
+                <div class="gbar ms done" style="left:2%;width:84%;top:10px"><span class="mchev">⌄</span><span class="pct">100%</span><span class="nm">Milestone 01 · 4/4 Name of the milestone</span></div>
+                <div class="gbar done" style="left:2%;width:14%;top:46px"><span class="pct">100%</span><span class="nm">Name of the step</span></div>
+                <div class="gbar done" style="left:14%;width:14%;top:74px"><span class="pct">100%</span><span class="nm">Name of the step</span></div>
+                <div class="gbar done" style="left:26%;width:14%;top:102px"><span class="pct">100%</span><span class="nm">Name of the step</span></div>
+                <div class="gbar done" style="left:38%;width:14%;top:130px"><span class="pct">100%</span><span class="nm">Name of the step</span></div>
+              </div>
+            </div>
+            <div class="grow">
+              <div class="glabel"><div class="pn">Phase 02:</div><div class="pn">Discovery &amp; Project Setup</div><div class="pf">1 / 5</div></div>
+              <div class="gtrack tinted-o" style="min-height:130px">
+                <div class="today-line" style="left:54%"></div>
+                <div class="gbar ms prog" style="left:40%;width:50%;top:10px"><span class="mchev">⌄</span></div>
+                <div class="gbar prog" style="left:40%;width:18%;top:46px"><span class="pct">100%</span><span class="nm">Name of the step</span></div>
+                <div class="gbar prog" style="left:54%;width:16%;top:74px"><span class="pct">90%</span><span class="nm">Name of the step</span></div>
+                <div class="gbar prog" style="left:64%;width:18%;top:102px"><span class="pct">90%</span><span class="nm">Name of the step</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="chat-shell">
+      <section class="chatcol" id="chatcol">
+      <div class="chead">
+        <div class="ci"></div>
+        <div class="ct"><div class="t1">Project Name here</div></div>
+        <div class="ring" style="--p:56"><span>56%</span></div>
+      </div>
+
+      <div class="crumbs">
+        <span class="seg">Phase 1</span><span class="sep">›</span>
+        <span class="seg">Milestone 1</span><span class="sep">›</span>
+        <span class="seg">Step 2</span><span class="sep">›</span>
+        <span class="seg now">Task 2</span>
+        <span class="cchev">⌄</span>
+      </div>
+
+      <div class="chat-scroll">
+        <div class="start-phase" id="startPhase">
+          <div class="sp-welcome">Welcome to <i>'Phase 1'</i></div>
+          <div class="sp-summary">A quick summary</div>
+          <button class="start-btn" id="startPhaseBtn">Start</button>
+        </div>
+        <div class="req-banner-row" id="reqBannerRow">
+          <button class="req-banner" id="reqBanner" type="button">
+            <span class="rb-ic">!</span>
+            <span><b>Phase 1</b> has <b>5</b> required items</span>
+            <span class="rb-view">View</span>
+          </button>
+        </div>
+        <div class="post-start">
+        <div class="milestone-card">
+          <div class="mn">Milestone Name <span class="pchev">⌃</span></div>
+          <div class="md">Lorem Ipsum Define the requirements before recording — scope, format, runtime targets, tone, and the creative brief for each episode.</div>
+        </div>
+
+        <div class="step-wrap">
+          <div class="step-onboard">
+            <div class="so-info">
+              <div class="so-title"><b>Step 1 -</b> Onboarding</div>
+              <div class="so-sub">Lorem Ipsum Identify what you'll need in order to completes this step</div>
+            </div>
+            <span class="pchev">⌄</span>
+          </div>
+
+          <div class="tasks-wrap" id="tasksWrap">
+            <div class="task-block" style="margin-bottom:10px">
+              <div class="task-head">
+                <span class="tmark"></span>
+                <span class="tname"><b>Task 1 -</b> Collect your thoughts</span>
+                <span class="tchev">⌄</span>
+              </div>
+            </div>
+
+            <div class="task-block">
+              <div class="task-head">
+                <span class="tmark"></span>
+                <span class="tname"><b>Task 2 -</b> Collect your thoughts</span>
+                <span class="tchev">⌃</span>
+              </div>
+
+              <div id="rowsHost">
+                <div class="q-row expanded" data-id="q1">
+                  <div class="q-head">
+                    <span class="qcheck"></span><span class="qdot"></span><span class="qchev">⌄</span><span class="qname">We proceeded by selecting: Option A</span><span class="qstar">★</span><button class="qmenu" data-menu>⋯</button>
+                  </div>
+                  <div class="q-body">
+                    <div class="play-row"><span class="play-btn">▶</span><span class="play-chev">⌃</span></div>
+                    <p class="bot-text">Choose all the reasons for why you're doing this project. This is important because having a vague idea is actually one of the top reasons why people quit. We'll look at why people typically quit in #3.</p>
+                    <div class="ans-card">
+                      <div class="act">Why Projects Sometimes Fail</div>
+                      <div class="acs">To succeed, you need to understand what stands in your way.</div>
+                      <button class="ac-opt selected"><span class="ck">✓</span>Power Drill</button>
+                      <button class="ac-opt"><span class="ck"></span>Power Drill</button>
+                      <button class="ac-opt"><span class="ck"></span>Power Drill</button>
+                      <button class="ac-opt"><span class="ck"></span>Power Drill</button>
+                      <input class="ac-input" placeholder="Type your own">
+                      <button class="ac-confirm">Confirm</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="q-row expanded" data-id="q2">
+                  <div class="q-head">
+                    <span class="qcheck"></span><span class="qdot square"></span><span class="qchev">⌄</span><span class="qname">Some ideas were considered 1–3…</span><span class="qstar">★</span><button class="qmenu" data-menu>⋯</button>
+                  </div>
+                  <div class="q-body">
+                    <p class="bot-text neutral">Episode Title (working): "Turning Point"
+- Target runtime: 18–25 minutes
+- Tone: intimate, observational, emotionally grounded; cinematic but restrained
+- Logline: Follow Maya (mid-30s), a former community organizer navigating a personal and professional breakup while trying to restart a neighborhood outreach program.
+The episode traces a single decision day that reveals why she keeps returning to public service despite growing burnout and self-doubt.
+Story arc (acts):
+1) Setup (minutes 0–6): Introduce Maya in her daily rhythm — home, terse text messages, outdated campaign posters in a closet.
+Establish the stakes: an important funding meeting in 48 hours and the recent loss of a close friend who was a program co-founder.
+2) Confrontation (minutes 6–16): Maya revisits the neighborhood clinic, argues with a potential funder, receives an uneasy call from her ex-partner, and faces a crisis of confidence. Intimate interviews and observational scenes reveal the emotional weight behind her public persona.
+3) Decision &amp; small victory (minutes 16–22): In a late-night planning session with a handful of volunteers, Maya makes a pragmatic choice about the program's scope.</p>
+                    <div class="user-bubble"><div class="ub">The user typed message here.</div></div>
+                  </div>
+                </div>
+                <div class="q-row starred" data-id="q3">
+                  <div class="q-head">
+                    <span class="qcheck"></span><span class="qdot square"></span><span class="qchev">⌄</span><span class="qname">Some ideas were considered 1–3…</span><span class="qstar">★</span><button class="qmenu" data-menu>⋯</button>
+                  </div>
+                </div>
+                <div class="q-row" data-id="q4">
+                  <div class="q-head">
+                    <span class="qcheck"></span><span class="qdot square"></span><span class="qchev">⌄</span><span class="qname">Some ideas were considered 1–3…</span><span class="qstar">★</span><button class="qmenu" data-menu>⋯</button>
+                  </div>
+                </div>
+                <div class="q-row" data-id="q5">
+                  <div class="q-head">
+                    <span class="qcheck"></span><span class="qdot square"></span><span class="qchev">⌄</span><span class="qname">Some ideas were considered 1–3…</span><span class="qstar">★</span><button class="qmenu" data-menu>⋯</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-block" style="margin-top:10px">
+              <div class="task-head">
+                <span class="tmark" style="background:var(--text-mute)"></span>
+                <span class="tname"><b>Task 3 -</b> Collect your thoughts</span>
+                <span class="tchev">⌄</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="conv">
+          <div class="bot-msg"><div class="bm">Ganttsy typed message here.</div></div>
+          <div class="usr-msg"><div class="um">The user typed message here.</div></div>
+        </div>
+        </div><!-- /.post-start -->
+      </div>
+
+      <div class="row-popover" id="rowPopover">
+        <button class="rp-item" data-action="rename"><span class="rp-ic">✎</span>Rename</button>
+        <button class="rp-item" data-action="star"><span class="rp-ic">★</span><span class="rp-label">Star</span></button>
+        <button class="rp-item" data-action="save"><span class="rp-ic">↧</span>Save to documents</button>
+        <button class="rp-item" data-action="group"><span class="rp-ic">⌐</span>Group Answers</button>
+        <div class="rp-sep"></div>
+        <button class="rp-item danger" data-action="delete"><span class="rp-ic">⌫</span>Delete</button>
+      </div>
+
+      <div class="select-bar" id="selectBar">
+        <span class="scount" id="scount">0 selected</span>
+        <input class="gname-input" id="gnameInput" placeholder="Name this group… (e.g. Motivation)">
+        <button class="gbtn" id="gbtn" disabled>Group</button>
+        <button class="gcancel" id="gcancel">Cancel</button>
+      </div>
+
+      <div class="cinput">
+        <div class="field"><input placeholder="Type a message…"><span class="mic">🎙</span></div>
+        <span class="send">↑</span>
+      </div>
+    </section>
+
+    <!-- ============== SALES NAV — separate column on the right ============== -->
+    <section class="salesnav" id="salesNav">
+      <div class="sn-head">
+        <span class="sn-ic">⊞</span>
+        <span class="sn-ti" id="snTitle">Section title</span>
+        <button class="sn-close" id="snClose" title="Close">×</button>
+      </div>
+
+      <div class="sn-tabs">
+        <button class="sn-tab on" data-phase="1">Phase 1 <span class="count">(5)</span></button>
+        <button class="sn-tab" data-phase="2">Phase 2 <span class="count">(4)</span></button>
+        <button class="sn-tab" data-phase="3">Phase 3 <span class="count">(10)</span></button>
+        <button class="sn-tab" data-phase="4">Phase 4 <span class="count">(2)</span></button>
+      </div>
+
+      <button class="sn-scroll-bot" id="snScrollBot" title="Latest">↓</button>
+
+      <div class="sn-head-stack" id="snHeadStack">
+        <div class="sn-status-bar" id="snStatusBarFloat">
+          <span class="lbl">Product</span>
+        </div>
+        <div class="sn-sub-tabs" id="snSubTabsFloat">
+          <button class="sn-sub-tab" data-source="free">Free</button>
+          <button class="sn-sub-tab" data-source="rent">Rent</button>
+          <button class="sn-sub-tab" data-source="buy">Buy</button>
+        </div>
+      </div>
+
+      <div class="sn-body" id="snBody">
+
+
+        <!-- Stage 0 — checklist -->
+        <div class="sn-stage active" data-stage="0">
+          <div class="sn-msg sn-reveal no-av" data-flow="1"><div class="b">For <b>Phase 1</b>, you'll need these five things. Confirm what you already have so I know what to source.</div></div>
+
+          <div class="items-card sn-reveal" data-flow="2">
+          <div class="ic-head">
+            <span class="ic-title">Required items</span>
+            <span class="ic-progress"><b id="icHaveN">0</b> of <b id="icTotalN">5</b> confirmed</span>
+          </div>
+          <div class="ic-body">
+            <div class="sn-item" data-item="drill">
+              <div class="sn-item-head">
+                <span class="si-check"></span>
+                <div class="si-body">
+                  <div class="si-name">Drill</div>
+                  <p class="si-desc">For fastening the frame &amp; sub-deck. <span class="si-rm">Why this matters</span></p>
+                  <div class="si-actions">
+                    <button class="si-have-btn" data-action="have">I have one</button>
+                    <span class="si-status is-have">On hand</span>
+                  </div>
+                </div>
+                <span class="si-chev">⌄</span>
+              </div>
+              <div class="si-extra">
+                <ol>
+                  <li><b>Intended use:</b> drive 2½" structural screws into joist-grade lumber.</li>
+                  <li><b>What it teaches:</b> torque control, pilot-hole technique.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div class="sn-item" data-item="saw">
+              <div class="sn-item-head">
+                <span class="si-check"></span>
+                <div class="si-body">
+                  <div class="si-name">Saw</div>
+                  <p class="si-desc">For dimensioning lumber and trimming plywood. <span class="si-rm">Why this matters</span></p>
+                  <div class="si-actions">
+                    <button class="si-have-btn" data-action="have">I have one</button>
+                    <span class="si-status is-have">On hand</span>
+                  </div>
+                </div>
+                <span class="si-chev">⌄</span>
+              </div>
+              <div class="si-extra">
+                <ol>
+                  <li><b>Intended use:</b> circular &amp; cross-cut on framing lumber up to 2×6.</li>
+                  <li><b>What it teaches:</b> measure-mark-cut discipline, blade selection.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div class="sn-item" data-item="soil">
+              <div class="sn-item-head">
+                <span class="si-check"></span>
+                <div class="si-body">
+                  <div class="si-name">Soil</div>
+                  <p class="si-desc">Backfill and pad-leveling. <span class="si-rm">Why this matters</span></p>
+                  <div class="si-actions">
+                    <button class="si-have-btn" data-action="have">I have one</button>
+                    <span class="si-status is-have">On hand</span>
+                  </div>
+                </div>
+                <span class="si-chev">⌄</span>
+              </div>
+              <div class="si-extra">
+                <ol>
+                  <li><b>Intended use:</b> ¾" minus + topsoil cap for backfill.</li>
+                  <li><b>What it teaches:</b> drainage gradients, compaction.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div class="sn-item" data-item="level">
+              <div class="sn-item-head">
+                <span class="si-check"></span>
+                <div class="si-body">
+                  <div class="si-name">Level</div>
+                  <p class="si-desc">A 4-ft level ensures the frame sits true before any fasteners go in. <span class="si-rm">Read More</span></p>
+                  <div class="si-actions">
+                    <button class="si-have-btn" data-action="have">I have one</button>
+                    <span class="si-status is-have">On hand</span>
+                  </div>
+                </div>
+                <span class="si-chev">⌄</span>
+              </div>
+              <div class="si-extra">
+                <ol>
+                  <li><b>Intended use:</b> framing &amp; deck plane checks.</li>
+                  <li><b>What it teaches:</b> reading bubbles, shim placement intuition.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div class="sn-item" data-item="tape">
+              <div class="sn-item-head">
+                <span class="si-check"></span>
+                <div class="si-body">
+                  <div class="si-name">Tape Measure</div>
+                  <p class="si-desc">25-ft tape with stand-out — used everywhere from layout to checking diagonals. <span class="si-rm">Read More</span></p>
+                  <div class="si-actions">
+                    <button class="si-have-btn" data-action="have">I have one</button>
+                    <span class="si-status is-have">On hand</span>
+                  </div>
+                </div>
+                <span class="si-chev">⌄</span>
+              </div>
+              <div class="si-extra">
+                <ol>
+                  <li><b>Intended use:</b> layout, framing dims, 3-4-5 squaring.</li>
+                  <li><b>What it teaches:</b> measuring once vs twice.</li>
+                </ol>
+              </div>
+            </div>
+          </div><!-- close ic-body -->
+          </div><!-- close items-card -->
+        </div><!-- close sn-stage 0 -->
+
+        <!-- Stage 1 — Sourcing -->
+        <div class="sn-stage" data-stage="1">
+          <div class="sn-msg sn-reveal no-av" data-flow="1"><div class="b"><b>Free is usually best</b> so I recommend starting there first. If we need to, we can explore the best fit and price if you have to make any purchases.</div></div>
+
+          <div class="sn-sub-tabs sn-sub-tabs-inline sn-reveal" id="snSubTabsInline" data-flow="2">
+            <button class="sn-sub-tab" data-source="free">Free</button>
+            <button class="sn-sub-tab" data-source="rent">Rent</button>
+            <button class="sn-sub-tab" data-source="buy">Buy</button>
+          </div>
+
+          <div class="sn-sub-stage" data-source="free" style="display:none">
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">1</span><span class="sn-step-ti">Start with existing network first</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p>Most people ask strangers first when they should ask <b>acquaintances</b>. Many people have <b>$500–$1,000 worth of tools</b> gathering dust in a garage.</p>
+                <p>Make a list of:</p>
+                <ul><li>Friends</li><li>Family</li><li>Neighbours</li><li>Co-workers</li><li>People from clubs or organizations you're involved with</li></ul>
+                <p><b>Send a simple message:</b></p>
+                <div class="sn-example">
+                  Hi everyone, I'm building a small shed over the next couple of weekends and I'm hoping to borrow a cordless drill and circular saw rather than buying tools I'll only use briefly. If anyone has either available, I'd be happy to pick them up, treat them carefully, and return them promptly. Thanks!
+                </div>
+              </div>
+            </div>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">2</span><span class="sn-step-ti">Facebook community groups</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p><b>Search words to try:</b> "tool library", "borrow drill", "loaner saw", "Buy Nothing [your neighborhood]", "[your city] makerspace".</p>
+                <div class="sn-example">Hey neighbours — building a backyard shed this month and looking to borrow a cordless drill + circular saw for a weekend. Happy to drop something off in return (cookies, beer, or yard help). DM me!</div>
+              </div>
+            </div>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">3</span><span class="sn-step-ti">Check local Tool Libraries / community orgs</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p>Many cities run actual <b>tool libraries</b> — you check tools out like books. Conduct a local search using <b>"[your city] tool library"</b>, <b>"makerspace"</b>, or local <b>Repair Café</b> listings.</p>
+                <p><button class="sn-mini">Search "tool library" near me ›</button></p>
+              </div>
+            </div>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">4</span><span class="sn-step-ti">Outside the box thinking… find a retired woodworker</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p>Many retirees:</p>
+                <ul><li>Have <b>fully equipped workshops</b>.</li><li>Like seeing someone actually build something.</li><li>Are often happy to lend tools or even help.</li></ul>
+                <p>A surprising number will say:</p>
+                <div class="sn-example">"Come over Saturday and use mine."</div>
+              </div>
+            </div>
+
+            <!-- Ganttsy follow-up after free strategies -->
+            <div class="sn-bot-line"><span class="bot-av">G</span><span>Want me to draft the network message right now?</span></div>
+
+            <button type="button" class="sn-cta-row" data-cta="free-message">
+              <span class="sn-cta-icn">📧</span>
+              <span class="sn-cta-label">Prepare a message I can send to my network</span>
+              <span class="sn-cta-arrow">›</span>
+            </button>
+          </div>
+
+          <div class="sn-sub-stage" data-source="rent" style="display:none">
+            <p class="sn-intro" style="margin-bottom:14px">Sometimes <b>renting is actually a better choice than free</b>. Here's why:</p>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">1</span><span class="sn-step-ti">Reliability and Availability</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p>Your project schedule depends on you, not someone else's garage.</p>
+                <p><b>With borrowed tools:</b></p>
+                <ul><li>"Can I keep it another day?"</li><li>"I need it back tonight."</li><li>Battery is dead.</li><li>Charger is missing.</li></ul>
+                <p><b>With rentals:</b></p>
+                <ul><li>You know exactly when you'll have the tool.</li><li>You know exactly when it must be returned.</li><li>Your shed build doesn't stall because Bob's grandson suddenly needs his drill.</li></ul>
+              </div>
+            </div>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">2</span><span class="sn-step-ti">Better Tools = Faster Project</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p>The average homeowner's drill may be:</p>
+                <ul><li>10 years old</li><li>Weak battery</li><li>Dull blade</li><li>Missing accessories</li></ul>
+                <p>Rental tools are often <b>commercial-grade</b>. A good circular saw can cut lumber noticeably faster and cleaner than an old homeowner model. For a shed, that can save several hours.</p>
+              </div>
+            </div>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">3</span><span class="sn-step-ti">No Relationship Risk</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p>Borrowing introduces social debt. If you:</p>
+                <ul><li>Drop the tool</li><li>Burn out the motor</li><li>Lose the battery</li><li>Forget to return it</li></ul>
+                <p>… you've potentially damaged a relationship. <b>Renting turns the arrangement into a simple transaction.</b></p>
+              </div>
+            </div>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">4</span><span class="sn-step-ti">You Can Get Exactly What You Need</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p>A neighbour may have:</p>
+                <ul><li>A hand saw instead of a circular saw.</li><li>A drill but no driver bits.</li><li>A tiny cordless drill that struggles with deck screws.</li></ul>
+                <p>Rental shops let you select:</p>
+                <ul><li>Circular saw</li><li>Mitre saw</li><li>Impact driver</li><li>Air nailer</li><li>Compressor</li></ul>
+                <p>… matching the actual job.</p>
+              </div>
+            </div>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">5</span><span class="sn-step-ti">Hidden Cost of "Free"</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p><b>Free isn't always free.</b> You might spend:</p>
+                <ul><li>3 hours locating tools.</li><li>Multiple phone calls.</li><li>Driving around town.</li><li>Waiting for someone to be available.</li></ul>
+                <p>If a drill rental costs <b>$20–30 for a day</b> and saves half a day of hunting, it can be the cheaper option overall.</p>
+              </div>
+            </div>
+
+            <!-- MAP: comes after the reasons, at the bottom of the rent flow -->
+            <p class="sn-intro" style="margin:20px 0 10px"><b>I found a few options nearby</b> — tap a tool to drop pins.</p>
+
+            <div class="sn-map-wrap">
+              <div class="sn-map-tools">
+                <span class="sn-map-tool-lbl">Tools</span>
+                <button class="sn-map-tool on" data-tool="drill"><span class="em">🛠</span>Drill</button>
+                <button class="sn-map-tool on" data-tool="saw"><span class="em">🪚</span>Saw</button>
+                <button class="sn-map-tool on" data-tool="soil"><span class="em">🌱</span>Soil</button>
+              </div>
+              <div class="sn-map" id="snMap">
+                <div class="road-2"></div>
+                <div class="road-3"></div>
+                <div class="park"></div>
+                <div class="you">You're here</div>
+                <div class="sn-map-hint">Pick a tool above to see nearby rentals.</div>
+                <div class="sn-map-pin" data-tool="drill" style="left:64%;top:30%"><div class="pin-bubble"><span class="em">🛠</span>Home Depot · <span class="price">$25/wkd</span></div><div class="pin-stick"></div></div>
+                <div class="sn-map-pin" data-tool="drill" style="left:22%;top:60%"><div class="pin-bubble"><span class="em">🛠</span>Pirtek · <span class="price">$28/wkd</span></div><div class="pin-stick"></div></div>
+                <div class="sn-map-pin" data-tool="drill" style="left:78%;top:78%"><div class="pin-bubble"><span class="em">🛠</span>Acme Rentals · <span class="price">$22/wkd</span></div><div class="pin-stick"></div></div>
+                <div class="sn-map-pin" data-tool="saw" style="left:50%;top:22%"><div class="pin-bubble"><span class="em">🪚</span>Home Depot · <span class="price">$35/wkd</span></div><div class="pin-stick"></div></div>
+                <div class="sn-map-pin" data-tool="saw" style="left:16%;top:75%"><div class="pin-bubble"><span class="em">🪚</span>BatteryHouse · <span class="price">$30/wkd</span></div><div class="pin-stick"></div></div>
+                <div class="sn-map-pin" data-tool="soil" style="left:84%;top:18%"><div class="pin-bubble"><span class="em">🌱</span>Green Supply · <span class="price">$6/bag</span></div><div class="pin-stick"></div></div>
+                <div class="sn-map-pin" data-tool="soil" style="left:46%;top:80%"><div class="pin-bubble"><span class="em">🌱</span>Garden Mart · <span class="price">$5/bag</span></div><div class="pin-stick"></div></div>
+                <div class="sn-map-pin" data-tool="soil" style="left:24%;top:30%"><div class="pin-bubble"><span class="em">🌱</span>Local Co-op · <span class="price">Free</span></div><div class="pin-stick"></div></div>
+              </div>
+            </div>
+
+            <div class="sn-intro" style="margin:18px 0 10px;font-size:11.5px;color:var(--text-mute);font-weight:800;letter-spacing:.1em;text-transform:uppercase">Reach out</div>
+
+            <button type="button" class="sn-cta-row" data-cta="rent-email">
+              <span class="sn-cta-icn">📧</span>
+              <span class="sn-cta-label">Prepare an email with my requirements</span>
+              <span class="sn-cta-arrow">›</span>
+            </button>
+
+            <button type="button" class="sn-cta-row" data-cta="rent-call">
+              <span class="sn-cta-icn">📞</span>
+              <span class="sn-cta-label">Get the script for when I call</span>
+              <span class="sn-cta-arrow">›</span>
+            </button>
+
+          </div>
+
+          <div class="sn-sub-stage" data-source="buy" style="display:none">
+            <p class="sn-intro" style="margin-bottom:14px">If this tool will <b>keep earning its place across future phases</b>, buying once can beat renting twice.</p>
+
+            <div class="sn-step">
+              <div class="sn-step-head"><span class="sn-step-num">1</span><span class="sn-step-ti">What to budget for</span><span class="sn-step-chev">⌄</span></div>
+              <div class="sn-step-body">
+                <p><b>Entry-level cordless circular saw</b> (homeowner-grade): $80–$140 — fine for one shed build, may struggle with hardwood.</p>
+                <p><b>Mid-range (recommended)</b>: $180–$280 — 18V/20V, 7¼" blade, ~4Ah battery, will last decades for occasional use.</p>
+                <p><b>Pro-grade</b>: $320+ — brushless motor, multiple batteries, faster cuts. Worth it only if you'll use it monthly.</p>
+              </div>
+            </div>
+
+            <button type="button" class="sn-cta-row" data-cta="buy-email">
+              <span class="sn-cta-icn">📧</span>
+              <span class="sn-cta-label">Prep an email with my requirements</span>
+              <span class="sn-cta-arrow">›</span>
+            </button>
+
+            <button type="button" class="sn-cta-row" data-cta="buy-call">
+              <span class="sn-cta-icn">📞</span>
+              <span class="sn-cta-label">Get the script for when I call</span>
+              <span class="sn-cta-arrow">›</span>
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Persistent salesnav footer — always at the bottom of the drawer, never scrolls -->
+      <div class="sn-footer">
+        <button class="ic-done" id="snDone">Need · Source 5 / 5 items</button>
+      </div>
+    </section>
+    </div><!-- /.chat-shell -->
+
+    </div>
+  </main>
+</div>
+
+<div class="toast"></div>
+
+<script>
+  const toast=t=>{const el=document.querySelector('.toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1700);};
+  const chatcol=document.getElementById('chatcol');
+  const tasksWrap=document.getElementById('tasksWrap');
+  const rowsHost=document.getElementById('rowsHost');
+  const selectBar=document.getElementById('selectBar');
+  const scount=document.getElementById('scount');
+  const gbtn=document.getElementById('gbtn');
+  const gcancel=document.getElementById('gcancel');
+  const gnameInput=document.getElementById('gnameInput');
+  const popover=document.getElementById('rowPopover');
+
+  let selecting=false;
+  let selectTask=null;   // the task-block currently in select mode (scoped)
+  let activeMenuRow=null; // row whose menu popover is currently open
+  let activeMenuBtn=null;
+
+  function enterSelect(taskBlock,seedRow){
+    if(selecting)return;
+    selecting=true;
+    selectTask=taskBlock;
+    taskBlock.classList.add('select-mode');
+    chatcol.classList.add('select-on');
+    if(seedRow)seedRow.classList.add('sel');
+    gnameInput.value='';
+    updateBar();
+  }
+  function exitSelect(){
+    selecting=false;
+    if(selectTask){
+      selectTask.classList.remove('select-mode');
+      selectTask.querySelectorAll('.q-row.sel').forEach(r=>r.classList.remove('sel'));
+    }
+    selectTask=null;
+    chatcol.classList.remove('select-on');
+    updateBar();
+  }
+  function updateBar(){
+    const n=selectTask?selectTask.querySelectorAll('.q-row.sel').length:0;
+    scount.textContent=n+' selected';
+    gbtn.disabled=(n<1);
+    gbtn.textContent=n>0?`Group ${n}`:'Group';
+  }
+  gcancel.addEventListener('click',exitSelect);
+
+  // single delegate: chev always expands; selection toggles only in scoped select mode
+  rowsHost.addEventListener('click',e=>{
+    const row=e.target.closest('.q-row');if(!row)return;
+    if(e.target.closest('.qmenu'))return;
+    // chevron always toggles expand, independent of select mode
+    if(e.target.closest('.qchev')){
+      row.classList.toggle('expanded');
+      return;
+    }
+    // in select mode: only square-dot rows are checkable
+    if(selecting && selectTask && selectTask.contains(row)){
+      if(!row.querySelector('.qdot.square'))return;
+      row.classList.toggle('sel');
+      updateBar();
+      return;
+    }
+    // outside select mode: head click toggles expand
+    const head=e.target.closest('.q-head');
+    if(head)row.classList.toggle('expanded');
+  });
+
+  /* ============ 3-DOT ROW MENU ============ */
+  function closeMenu(){
+    popover.classList.remove('show');
+    if(activeMenuBtn)activeMenuBtn.classList.remove('open');
+    activeMenuRow=null;activeMenuBtn=null;
+  }
+  function openMenuFor(row,btn){
+    activeMenuRow=row;activeMenuBtn=btn;btn.classList.add('open');
+    // refresh Star label
+    const starItem=popover.querySelector('[data-action="star"] .rp-label');
+    if(starItem)starItem.textContent=row.classList.contains('starred')?'Unstar':'Star';
+    // position popover near the menu btn, kept inside the chat panel
+    const r=btn.getBoundingClientRect();
+    const panel=chatcol.getBoundingClientRect();
+    const w=210;
+    let left=r.right-w;
+    if(left<panel.left+8)left=panel.left+8;
+    if(left+w>panel.right-8)left=panel.right-w-8;
+    popover.style.left=(left-panel.left+chatcol.scrollLeft)+'px';
+    popover.style.top=(r.bottom-panel.top+chatcol.scrollTop+4)+'px';
+    popover.classList.add('show');
+  }
+  document.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-menu]');
+    if(btn){
+      e.stopPropagation();
+      const row=btn.closest('.q-row');
+      if(!row)return;
+      if(activeMenuRow===row){closeMenu();return;}
+      closeMenu();
+      openMenuFor(row,btn);
+      return;
+    }
+    if(!popover.contains(e.target))closeMenu();
+  });
+  popover.addEventListener('click',e=>{
+    const item=e.target.closest('.rp-item');
+    if(!item||!activeMenuRow)return;
+    const act=item.dataset.action;
+    const row=activeMenuRow;
+    const task=row.closest('.task-block');
+    closeMenu();
+    if(act==='group'){
+      // task-scoped grouping: enter select-mode for THIS task only,
+      // pre-selecting the originating row
+      enterSelect(task,row);
+    } else if(act==='star'){
+      row.classList.toggle('starred');
+      toast(row.classList.contains('starred')?'Starred':'Unstarred');
+    } else if(act==='rename'){
+      toast('Rename — coming soon');
+    } else if(act==='save'){
+      toast('Saved to documents');
+    } else if(act==='delete'){
+      toast('Delete — coming soon');
+    }
+  });
+
+  let groupCount=0;
+  gbtn.addEventListener('click',()=>{
+    if(!selectTask)return;
+    const rows=Array.from(selectTask.querySelectorAll('.q-row.sel'));
+    if(!rows.length)return;
+    groupCount++;
+    const name=gnameInput.value.trim()||`Group ${groupCount}`;
+    // Find insertion point — before the first selected row's current position
+    const firstSel=rows[0];
+    const parent=firstSel.parentNode;
+    const wrapper=document.createElement('div');
+    wrapper.className='group-block';
+    wrapper.dataset.group=groupCount;
+    wrapper.innerHTML=`
+      <div class="group-head">
+        <span class="gico">⌐</span>
+        <input class="gname" value="${escapeHtml(name)}" placeholder="Name this group…" />
+        <span class="gedit" title="Rename">✎</span>
+        <span class="gcount">${rows.length}</span>
+        <button class="gungroup" title="Break this group apart"><span class="ux">⌫</span>Ungroup</button>
+        <span class="gchev">⌄</span>
+      </div>
+      <div class="group-body"></div>`;
+    parent.insertBefore(wrapper,firstSel);
+    const body=wrapper.querySelector('.group-body');
+    rows.forEach(r=>{r.classList.remove('sel');body.appendChild(r);});
+    const nameInp=wrapper.querySelector('.gname');
+    // prevent collapse when interacting with name/edit
+    nameInp.addEventListener('click',e=>e.stopPropagation());
+    nameInp.addEventListener('keydown',e=>{if(e.key==='Enter')nameInp.blur();});
+    wrapper.querySelector('.gedit').addEventListener('click',e=>{
+      e.stopPropagation();nameInp.focus();nameInp.select();
+    });
+    // collapse toggle
+    wrapper.querySelector('.group-head').addEventListener('click',e=>{
+      if(e.target.closest('.gungroup')||e.target.classList.contains('gname')||e.target.classList.contains('gedit'))return;
+      wrapper.classList.toggle('collapsed');
+    });
+    wrapper.querySelector('.gungroup').addEventListener('click',e=>{
+      e.stopPropagation();
+      // Ungroup: move rows back out before the wrapper into the same parent
+      const inner=Array.from(body.querySelectorAll('.q-row'));
+      const parentEl=wrapper.parentNode;
+      inner.forEach(r=>parentEl.insertBefore(r,wrapper));
+      wrapper.remove();
+      toast('Ungrouped');
+    });
+    toast(`Created "${name}" with ${rows.length} item${rows.length>1?'s':''}`);
+    exitSelect();
+  });
+
+  function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  // Cinput action toasts
+  document.querySelectorAll('.cinput .send, .cinput .mic').forEach(i=>i.addEventListener('click',()=>toast('Action')));
+
+  /* ============== SALES NAV (right-side drawer) ============== */
+  (function setupSalesNav(){
+    const banner=document.getElementById('reqBanner');
+    const drawer=document.getElementById('salesNav');
+    const content=document.querySelector('.content');
+    const closeBtn=document.getElementById('snClose');
+    if(!banner||!drawer||!content)return;
+
+    function open(){
+      drawer.classList.add('open');content.classList.add('sn-open');
+      // re-trigger the staggered chat-flow reveal on the active stage
+      const active=drawer.querySelector('.sn-stage.active');
+      if(active)revealStage(active);
+    }
+    function close(){drawer.classList.remove('open');content.classList.remove('sn-open');resetStage();}
+    banner.addEventListener('click',open);
+    closeBtn.addEventListener('click',close);
+
+    // Start Phase 1 CTA — must be clicked first; reveals the orange "View" banner
+    const startPhaseBtn=document.getElementById('startPhaseBtn');
+    const startPhase=document.getElementById('startPhase');
+    const reqBannerRow=document.getElementById('reqBannerRow');
+    if(startPhaseBtn)startPhaseBtn.addEventListener('click',()=>{
+      startPhase.classList.add('gone');
+      document.querySelector('.chat-scroll').classList.add('started');
+      reqBannerRow.classList.add('show');
+      reqBannerRow.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+
+    drawer.querySelectorAll('.sn-tab').forEach(t=>t.addEventListener('click',()=>{
+      drawer.querySelectorAll('.sn-tab').forEach(x=>x.classList.remove('on'));
+      t.classList.add('on');
+      toast('Phase '+t.dataset.phase+' loaded');
+      resetStage();
+    }));
+
+    // Item-head click: only handles expand/collapse. "I have one" goes through validation.
+    drawer.querySelectorAll('.sn-item .sn-item-head').forEach(head=>{
+      head.addEventListener('click',e=>{
+        const row=head.closest('.sn-item');
+        if(e.target.closest('.si-actions'))return;  // let action buttons handle their own clicks
+        if(e.target.classList.contains('si-rm')){row.classList.add('expanded');return;}
+        // any other click on the head toggles the expand state
+        row.classList.toggle('expanded');
+      });
+    });
+
+    // "I've ordered it" buttons inside each item
+    drawer.querySelectorAll('.si-ord-btn').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const row=btn.closest('.sn-item');
+        row.classList.remove('have','validating');
+        row.classList.add('ordered');
+        updateDoneLabel();
+        const name=row.querySelector('.si-name').textContent;
+        dropFlowMsg('Got it — '+name+' is on the way. I won\'t block the phase on this one.');
+      });
+    });
+
+    /* === INLINE VALIDATION FLOW per item === */
+    // Inject validation block after each item-head
+    drawer.querySelectorAll('.sn-item').forEach(row=>{
+      const id=row.dataset.item;
+      const itemName=row.querySelector('.si-name').textContent;
+      const valHTML=`
+        <div class="si-validate">
+          <div class="si-bot"><span class="av">G</span><div class="b">Nice — let's quickly confirm <b>${itemName}</b> works for this build. Type your model number, or snap a photo.</div></div>
+          <div class="si-val-tabs">
+            <button class="si-val-tab on" data-mode="model">Enter model</button>
+            <button class="si-val-tab" data-mode="photo">Upload photo</button>
+          </div>
+          <div class="si-val-input" data-mode-content="model">
+            <input type="text" placeholder="e.g. DeWalt DCS391" />
+            <button class="si-verify" disabled>Verify</button>
+          </div>
+          <button class="si-val-photo" data-mode-content="photo" style="display:none">📷 Tap to upload a photo</button>
+          <button class="si-cancel">‹ Cancel</button>
+        </div>`;
+      row.insertAdjacentHTML('beforeend',valHTML);
+    });
+
+    // "I have one" buttons → open validation flow
+    drawer.querySelectorAll('.si-have-btn').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        e.preventDefault();
+        const row=btn.closest('.sn-item');
+        row.classList.remove('have','tried');
+        row.classList.add('validating');
+        row.classList.add('expanded');
+        // focus the model input so user can type immediately
+        const input=row.querySelector('.si-validate input');
+        if(input)setTimeout(()=>input.focus(),120);
+      });
+    });
+
+    // Wire up each validation block
+    drawer.querySelectorAll('.si-validate').forEach(val=>{
+      const row=val.closest('.sn-item');
+      const tabs=val.querySelectorAll('.si-val-tab');
+      const modelBlock=val.querySelector('[data-mode-content="model"]');
+      const photoBlock=val.querySelector('[data-mode-content="photo"]');
+      const input=val.querySelector('input');
+      const verify=val.querySelector('.si-verify');
+      const photo=val.querySelector('.si-val-photo');
+      const cancel=val.querySelector('.si-cancel');
+
+      tabs.forEach(t=>t.addEventListener('click',e=>{
+        e.stopPropagation();
+        tabs.forEach(x=>x.classList.remove('on'));t.classList.add('on');
+        const m=t.dataset.mode;
+        modelBlock.style.display=m==='model'?'flex':'none';
+        photoBlock.style.display=m==='photo'?'flex':'none';
+      }));
+
+      input.addEventListener('click',e=>e.stopPropagation());
+      input.addEventListener('input',()=>verify.disabled=!input.value.trim());
+
+      function processVerify(label){
+        // remove previous bot bubbles (keep just the first welcome one)
+        val.querySelectorAll('.si-bot:not(:first-child),.si-processing').forEach(n=>n.remove());
+        // show processing dots
+        const proc=document.createElement('div');
+        proc.className='si-processing';
+        proc.innerHTML='<i></i><i></i><i></i><span style="font-size:11.5px;color:var(--text-mute);margin-left:2px;font-weight:600">Checking '+label+'…</span>';
+        val.appendChild(proc);
+        setTimeout(()=>{
+          proc.remove();
+          // 70% success chance based on a hash so it's deterministic-ish but feels real
+          const ok=Math.random()>.25;
+          const result=document.createElement('div');
+          if(ok){
+            result.className='si-bot success';
+            result.innerHTML='<span class="av">✓</span><div class="b"><b>Yes — that\'ll work.</b> Confirmed and scratched off the list.</div>';
+            val.appendChild(result);
+            setTimeout(()=>{
+              row.classList.remove('validating');
+              row.classList.add('have');
+              row.classList.remove('expanded');  // collapse confirmed items so user can see what's next
+              updateDoneLabel();
+            },800);
+          } else {
+            result.className='si-bot warn';
+            result.innerHTML='<span class="av">!</span><div class="b"><b>Hmm — that one isn\'t a fit.</b> I\'ll add it to the sourcing list. You can try a different model or move on.</div>';
+            val.appendChild(result);
+            row.classList.remove('have');
+            row.classList.add('tried');  // counts toward "touched" so Done can enable
+            updateDoneLabel();
+          }
+        },1100);
+      }
+
+      verify.addEventListener('click',e=>{
+        e.stopPropagation();
+        if(verify.disabled)return;
+        processVerify('"'+input.value.trim()+'"');
+      });
+      photo.addEventListener('click',e=>{
+        e.stopPropagation();
+        processVerify('the photo');
+      });
+      cancel.addEventListener('click',e=>{
+        e.stopPropagation();
+        row.classList.remove('validating');
+        // reset
+        val.querySelectorAll('.si-bot:not(:first-child),.si-processing').forEach(n=>n.remove());
+        input.value='';verify.disabled=true;
+      });
+    });
+
+    /* Drop a Ganttsy chat bubble into the Stage 0 items area (chat-flow feel) */
+    function dropFlowMsg(text){
+      const stage=drawer.querySelector('.sn-stage.active');
+      if(!stage)return;
+      const msg=document.createElement('div');
+      msg.className='sn-msg sn-reveal';
+      msg.innerHTML='<span class="av">G</span><div class="b">'+text+'</div>';
+      // append before the CTA
+      const cta=stage.querySelector('.sn-cta');
+      if(cta)cta.parentNode.insertBefore(msg,cta);else stage.appendChild(msg);
+      requestAnimationFrame(()=>{
+        msg.classList.add('shown');
+        const body=drawer.querySelector('.sn-body');
+        try{body.scrollTo({top:body.scrollHeight,behavior:'smooth'});}catch(e){body.scrollTop=body.scrollHeight;}
+      });
+      // auto-remove after a while so it doesn't pile up
+      setTimeout(()=>{msg.style.transition='opacity .3s';msg.style.opacity='0';setTimeout(()=>msg.remove(),350);},5500);
+    }
+
+    function updateDoneLabel(){
+      const have=drawer.querySelectorAll('.sn-item.have').length;
+      const total=drawer.querySelectorAll('.sn-item').length;
+      const btn=document.getElementById('snDone');
+      const progN=document.getElementById('icHaveN');
+      const totN=document.getElementById('icTotalN');
+      if(progN)progN.textContent=have;
+      if(totN)totN.textContent=total;
+      if(!btn)return;
+      const need=total-have;
+      // Always enabled — Need / Source N/T items
+      btn.disabled=false;
+      if(have===total){btn.textContent='All set · Done';}
+      else {btn.textContent='Need · Source '+need+' / '+total+' items';}
+      renderStatusBar();
+    }
+
+    /* Floating status bar — pills per item, click jumps back to that item */
+    function renderStatusBar(){
+      const bar=document.getElementById('snStatusBarFloat');
+      if(!bar)return;
+      // remove old pills (keep the label)
+      Array.from(bar.querySelectorAll('.sn-status-pill')).forEach(p=>p.remove());
+      const items=drawer.querySelectorAll('.sn-stage[data-stage="0"] .sn-item');
+      let anyTouched=false;
+      items.forEach(it=>{
+        const name=it.querySelector('.si-name').textContent;
+        const id=it.dataset.item;
+        let state='need';
+        if(it.classList.contains('have'))state='have',anyTouched=true;
+        else if(it.classList.contains('ordered'))state='ordered',anyTouched=true;
+        const p=document.createElement('button');
+        p.className='sn-status-pill '+state;
+        p.dataset.target=id;
+        p.innerHTML='<span class="dot"></span>'+name;
+        p.addEventListener('click',()=>{
+          // open it and compute precise scroll target inside body
+          it.classList.add('expanded');
+          const b=document.getElementById('snBody');
+          const top=it.getBoundingClientRect().top-b.getBoundingClientRect().top+b.scrollTop-60;
+          b.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+        });
+        bar.appendChild(p);
+      });
+      // Always visible — pills are struck through if `.have`, dimmed if `.ordered`
+    }
+
+    /* Rent map — tool buttons toggle pins on/off */
+    const snMap=document.getElementById('snMap');
+    const snMapStats=document.getElementById('snMapStats');
+    const snMapCTA=document.getElementById('snMapCTA');
+    drawer.querySelectorAll('.sn-map-tool').forEach(b=>b.addEventListener('click',()=>{
+      b.classList.toggle('on');
+      updateMap();
+    }));
+    // initial run so defaults (all 3 on) drop pins right away
+    setTimeout(()=>{try{updateMap();}catch(e){}},0);
+    function updateMap(){
+      if(!snMap)return;
+      const active=Array.from(drawer.querySelectorAll('.sn-map-tool.on')).map(b=>b.dataset.tool);
+      snMap.querySelectorAll('.sn-map-pin').forEach(p=>{
+        const t=p.dataset.tool;
+        p.classList.toggle('show',active.includes(t));
+      });
+      snMap.classList.toggle('has-pins',active.length>0);
+      const count=snMap.querySelectorAll('.sn-map-pin.show').length;
+      if(count>0){
+        snMapStats.innerHTML='Showing <b>'+count+' location'+(count>1?'s':'')+'</b> for '+active.join(', ');
+        snMapCTA.disabled=false;
+      } else {
+        snMapStats.textContent='Pick a tool to see rental locations within ~5 mi.';
+        snMapCTA.disabled=true;
+      }
+    }
+    if(snMapCTA)snMapCTA.addEventListener('click',()=>toast('Email + map links sent'));
+
+    /* Scroll-to-bottom arrow logic */
+    const body=document.getElementById('snBody');
+    const scrollBot=document.getElementById('snScrollBot');
+    if(body&&scrollBot){
+      body.addEventListener('scroll',()=>{
+        const nearBot=body.scrollHeight-body.scrollTop-body.clientHeight<60;
+        scrollBot.classList.toggle('on',!nearBot);
+      });
+      scrollBot.addEventListener('click',()=>{body.scrollTo({top:body.scrollHeight,behavior:'smooth'});});
+    }
+
+    updateDoneLabel();
+
+    const doneBtn=document.getElementById('snDone');
+    const back0=document.getElementById('snBack0');
+    function goToStage(n){
+      // Don't deactivate previous stages — chat history stays visible above as new content drops in below
+      const target=drawer.querySelector('.sn-stage[data-stage="'+n+'"]');
+      if(!target)return;
+      target.classList.add('active');
+      revealStage(target);
+    }
+
+    /* Sequential reveal with typing dots before each Ganttsy bubble — chat-flow feel */
+    function revealStage(stage){
+      const blocks=Array.from(stage.querySelectorAll('.sn-reveal'))
+        .filter(b=>!b.closest('.sn-sub-stage')||b.classList.contains('sn-sub-stage'))
+        .sort((a,b)=>(+a.dataset.flow||0)-(+b.dataset.flow||0));
+      if(!blocks.length)return;
+      blocks.forEach(b=>b.classList.remove('shown'));
+      // remove any previous stray typing nodes
+      stage.querySelectorAll('.sn-typing').forEach(n=>n.remove());
+      // safety: if reveal stalls, force everything visible after 10s
+      const safety=setTimeout(()=>blocks.forEach(b=>b.classList.add('shown')),10000);
+
+      const body=drawer.querySelector('.sn-body');
+      const isStage1 = stage.dataset.stage === '1';
+      const statusBarFloat = document.getElementById('snStatusBarFloat');
+      function scrollToEnd(){
+        try{body.scrollTo({top:body.scrollHeight,behavior:'smooth'});}catch(e){body.scrollTop=body.scrollHeight;}
+      }
+      // Stage 1: floating product bar slides in just before the Ganttsy bubble.
+      // (The Free/Rent/Buy tabs appear inline in the chat — the floating tabs bar only opens once user clicks a tab.)
+      if(isStage1 && statusBarFloat){
+        setTimeout(()=>statusBarFloat.classList.add('show'), 350);
+      }
+      let i=0;
+      function next(){
+        if(i>=blocks.length){
+          clearTimeout(safety);
+          // Stage 1 ends with inline tabs awaiting user choice; no sub-stage auto-reveal.
+          return;
+        }
+        const b=blocks[i];
+        const isMsg=b.classList.contains('sn-msg');
+        // Inline tab cluster — no typing dot, just slide in cleanly
+        const isInlineTabs = b.classList.contains('sn-sub-tabs-inline');
+        if(isInlineTabs){
+          b.classList.add('shown');
+          scrollToEnd();
+          i++;
+          setTimeout(next, 350);
+          return;
+        }
+        const typing=document.createElement('div');
+        typing.className='sn-typing';
+        typing.innerHTML='<span class="av">G</span><span class="dots"><i></i><i></i><i></i></span>';
+        b.parentNode.insertBefore(typing,b);
+        scrollToEnd();
+        const wait = isMsg ? 700 : 500;
+        setTimeout(()=>{
+          typing.remove();
+          b.classList.add('shown');
+          scrollToEnd();
+          i++;
+          setTimeout(next, isMsg?500:380);
+        }, wait);
+      }
+      next();
+    }
+    function resetStage(){
+      // Explicit reset of stages on close — start fresh next time
+      drawer.querySelectorAll('.sn-stage').forEach(s=>s.classList.remove('active'));
+      // restore the Done CTA so the user can hit it again next session
+      const foot=drawer.querySelector('.sn-footer');
+      if(foot)foot.style.display='';
+      // hide both floating bars — each reappears in the Stage 1 chat flow next time
+      document.getElementById('snStatusBarFloat')?.classList.remove('show');
+      document.getElementById('snSubTabsFloat')?.classList.remove('show');
+      // restore inline tabs (no source picked yet) and hide all sub-stages
+      const inline = document.getElementById('snSubTabsInline');
+      if(inline){inline.style.display='';inline.classList.remove('shown');}
+      goToStage(0);
+      drawer.querySelectorAll('.sn-sub-stage').forEach(s=>{s.style.display='none';s.classList.remove('chosen');});
+      drawer.querySelectorAll('.sn-sub-tab').forEach(t=>t.classList.remove('on'));
+      document.getElementById('snTitle').textContent='Section title';
+    }
+    if(doneBtn)doneBtn.addEventListener('click',()=>{
+      const have=drawer.querySelectorAll('.sn-item.have').length;
+      const total=drawer.querySelectorAll('.sn-item').length;
+      goToStage(1);
+      document.getElementById('snTitle').textContent= have===total ? 'Sourcing options' : 'Source what\'s missing';
+      // Hide the Done/Source CTA — its job is done; user is now in the sourcing chat
+      const foot=drawer.querySelector('.sn-footer');
+      if(foot)foot.style.display='none';
+      // The floating product bar + Free/Rent/Buy tabs will appear inside the chat reveal of Stage 1 (see revealStage)
+    });
+    if(back0)back0.addEventListener('click',()=>{
+      goToStage(0);
+      document.getElementById('snTitle').textContent='Section title';
+    });
+
+    const ITEM_INFO={
+      saw:{name:'Saw',desc:'A circular saw, cordless ideally. Used for dimensioning 2×4 framing and trimming plywood.'},
+      drill:{name:'Drill',desc:'An 18V/20V cordless drill-driver for fastening framing and sub-deck.'},
+      soil:{name:'Soil',desc:'¾" minus base plus topsoil cap for backfill, drainage, and pad-leveling.'}
+    };
+    drawer.querySelectorAll('.sn-chip').forEach(c=>c.addEventListener('click',()=>{
+      if(c.classList.contains('on'))return;
+      drawer.querySelectorAll('.sn-chip').forEach(x=>x.classList.remove('on'));
+      c.classList.add('on');
+      const info=ITEM_INFO[c.dataset.target];
+      if(info){
+        const topName=document.getElementById('snItemName');
+        if(topName)topName.textContent=info.name;
+        const detailName=drawer.querySelector('.sn-id-name');
+        if(detailName)detailName.textContent=info.name;
+        const desc=document.getElementById('snItemDesc');
+        if(desc)desc.textContent=info.desc;
+      }
+      // scroll back to top of stage 1
+      drawer.querySelector('.sn-body').scrollTop=0;
+    }));
+
+    function switchSource(src){
+      // mark the choice on all tab clusters (inline + floating)
+      drawer.querySelectorAll('.sn-sub-tab').forEach(x=>x.classList.toggle('on',x.dataset.source===src));
+      // reveal only the chosen sub-stage content
+      drawer.querySelectorAll('.sn-sub-stage').forEach(s=>{
+        const match=s.dataset.source===src;
+        s.style.display=match?'block':'none';
+        s.classList.toggle('chosen',match);
+        if(match)revealSubStage(s);
+      });
+      // once any tab has been picked, hand off from inline tabs to the floating bar
+      const inline = document.getElementById('snSubTabsInline');
+      const floatBar = document.getElementById('snSubTabsFloat');
+      if(inline)inline.style.display='none';
+      floatBar?.classList.add('show');
+    }
+    drawer.querySelectorAll('.sn-sub-tab').forEach(t=>t.addEventListener('click',()=>switchSource(t.dataset.source)));
+
+    /* Reach-out CTA rows — just placeholder action toasts for now */
+    drawer.querySelectorAll('.sn-cta-row').forEach(c=>c.addEventListener('click',()=>{
+      const action=c.dataset.cta||'action';
+      toast('Action: '+action);
+    }));
+
+    /* Sub-stage content populates instantly — no progressive reveal */
+    function revealSubStage(stage){
+      stage.querySelectorAll('.sn-typing').forEach(n=>n.remove());
+      Array.from(stage.children).forEach(p=>{
+        p.style.opacity='1';p.style.transform='none';p.style.transition='';
+      });
+    }
+
+    drawer.querySelectorAll('.sn-step-head').forEach(h=>h.addEventListener('click',()=>h.parentNode.classList.toggle('expanded')));
+
+    const valBtn=drawer.querySelector('.val-upload');
+    if(valBtn)valBtn.addEventListener('click',()=>toast('Camera / file picker would open'));
+
+    const confirmBtn=document.getElementById('snConfirm');
+    if(confirmBtn)confirmBtn.addEventListener('click',()=>{
+      // mark currently active chip done, advance to next un-sourced
+      const chips=Array.from(drawer.querySelectorAll('.sn-bottom-nav .sn-chip'));
+      const active=chips.find(c=>c.classList.contains('on'));
+      if(active){active.classList.remove('on');active.classList.add('done');}
+      const next=chips.find(c=>!c.classList.contains('done'));
+      if(next){
+        next.classList.add('on');
+        next.click();
+        toast('Logged · moved to '+next.dataset.target);
+      } else {
+        toast('All items sourced — Phase 1 unblocked');
+        close();
+      }
+      updateSourcedCount();
+    });
+
+    function updateSourcedCount(){
+      const sEl=document.getElementById('snSourced');
+      const tEl=document.getElementById('snTotal');
+      if(!sEl||!tEl)return;
+      const chips=drawer.querySelectorAll('.sn-bottom-nav .sn-chip');
+      sEl.textContent=Array.from(chips).filter(c=>c.classList.contains('done')).length;
+      tEl.textContent=chips.length;
+    }
+    updateSourcedCount();
+
+    // wire .sn-mini action buttons (event delegation for nodes added inline)
+    drawer.addEventListener('click',e=>{
+      const btn=e.target.closest('.sn-mini');
+      if(!btn)return;
+      e.stopPropagation();
+      const txt=btn.textContent.trim().replace(/[›]/g,'').trim();
+      toast(txt+' (mocked)');
+    });
+
+    // helper tooltip on the banner (only on first hover)
+    let tipShown=false;
+    banner.addEventListener('mouseenter',()=>{
+      if(tipShown)return;
+      tipShown=true;
+      banner.setAttribute('title','Shown at start of every phase and at critical gates — proceeding is blocked until each item is marked as on-hand or ordered.');
+    });
+  })();
+</script>
+</body>
+</html>
